@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Generator + Solver</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Sudoku</h1>
+
+        <div class="timer-container">
+            <span id="timer-display">00:00</span>
+            <button id="btn-pause">Pause</button>
+        </div>
+
+        <div id="sudoku-board"></div>
+
+        <div id="keypad" class="keypad">
+            <button class="key" data-value="1">1</button>
+            <button class="key" data-value="2">2</button>
+            <button class="key" data-value="3">3</button>
+            <button class="key" data-value="4">4</button>
+            <button class="key" data-value="5">5</button>
+            <button class="key" data-value="6">6</button>
+            <button class="key" data-value="7">7</button>
+            <button class="key" data-value="8">8</button>
+            <button class="key" data-value="9">9</button>
+            <button class="key key-erase" data-value="erase">⌫</button>
+            <button id="btn-notes" class="btn-notes">Notes Mode: OFF</button>
+        </div>
+
+        <div class="controls">
+            <select id="difficulty-select">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+            <button id="btn-generate">New Game</button>
+            <button id="btn-solve">Reveal Solution</button>
+            <button id="btn-hint" class="btn-hint">Reveal Hint</button>
+            <button id="btn-check">Check Puzzle</button>
+            <button id="btn-clear">Clear</button>
+            <button id="btn-theme" class="theme-toggle">🌙</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <div id="victory-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>🎉 Puzzle Solved!</h2>
+            <p>Great job! You completed the puzzle in <span id="win-time">00:00</span>.</p>
+            <button id="btn-play-again">Play Again</button>
+        </div>
+    </div>
+</body>
+</html>

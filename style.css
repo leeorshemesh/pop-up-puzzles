@@ -1,0 +1,331 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f4f6f8;
+    margin: 0;
+}
+
+.container {
+    text-align: center;
+}
+
+#sudoku-board {
+    display: grid;
+    grid-template-columns: repeat(9, 50px);
+    grid-template-rows: repeat(9, 50px);
+    gap: 0;
+    border: 3px solid #333;
+    margin: 20px auto;
+    width: fit-content;
+}
+
+.cell {
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.cell:nth-child(3n) {
+    border-right: 2px solid #333;
+}
+.cell:nth-child(9n){
+    border-right: 1px solid #ccc;
+}
+
+.cell.border-bottom {
+    border-bottom: 2px solid #333;
+}
+
+.cell.given {
+    background-color: #e9ecef;
+    color: #212529;
+}
+
+.cell.user-input{
+    color: #0066cc;
+}
+
+.controls button{
+    padding: 10px 15px;
+    font-size: 1rem;
+    margin: 5px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: white;
+}
+
+.controls button:hover{
+    background-color: #0056b3;
+}
+
+.controls select{
+    padding: 10px 15px;
+    font-size: 1rem;
+    margin: 5px;
+    border: 1px sold #007bff;
+    border-radius: 4px;
+    background-color: white;
+    color: #007bff;
+    cursor: pointer;
+    font-weight:bold;
+}
+
+.controls select:focus{
+    outline: none;
+    border-color: #0056b3;
+}
+
+.cell:focus{
+    background-color: #b3d7ff !important;
+}
+
+.cell.highlighted{
+    background-color: #e8f4ff;
+}
+
+.cell.invalid{
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.timer-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin: 10px 0;
+    font-family: monospace;
+    font-size: 1.2rem;
+}
+
+#timer-display{
+    font-weight: bold;
+    color: #333;
+}
+
+#sudoku-board.paused{
+    filter: blur(4px);
+    pointer-events: none;
+    user-select: none;
+}
+
+.keypad{
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 15px auto;
+    max-width: 450px;
+}
+
+.key{
+    flex: 1;
+    height: 45px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.key:hover:not(:disabled){
+    background-color: #e2e6ea;
+}
+
+.key:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background-color: #e9ecef;
+    border-color: #ddd;
+}
+
+.key-erase {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+#sudoku-board.victory {
+    animation: pulseGlow 1s ease-in-out 2;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 5px #28a745; }
+    50% { box-shadow: 0 0 25px #28a745; }
+}
+
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --board-border: #333333;
+    --cell-border: #ccc;
+    --cell-bg: #ffffff;
+    --given-bg: #f0f0f0;
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --board-border: #bb86fc;
+    --cell-border: #444444;
+    --cell-bg: #1e1e1e;
+    --given-bg: #2d2d2d;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#sudoku-board {
+    border-color: var(--board-border);
+}
+
+.cell {
+    background-color: var(--cell-bg);
+    color: var(--text-color);
+    border-color: var(--cell-border);
+}
+
+.cell.given {
+    background-color: var(--given-bg);
+}
+
+.modal-content {
+    background-color: var(--cell-bg);
+    color: var(--text-color);
+}
+
+/* Notes Toggle Active Style */
+.btn-notes.active {
+    background-color: #0d6efd;
+    color: #ffffff;
+    border-color: #0a58ca;
+}
+
+.cell-wrapper {
+    position: relative;
+    width: 50px;
+    height: 50px;
+}
+
+.notes-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.note-digit {
+    font-size: 0.65rem;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    visibility: hidden;
+    user-select: none;
+}
+
+.note-digit.visible {
+    visibility: visible;
+}
+
+/* Hide actual cell input text when notes exist so they don't overlap */
+.cell.has-notes {
+    color: transparent;
+}
+
+#sudoku-board {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    width: 450px;
+    height: 450px;
+    margin: 0 auto;
+    border: 2px solid var(--board-border, #333);
+}
+
+.cell-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.cell {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 1.5rem;
+    border: 1px solid var(--cell-border, #ccc);
+    outline: none;
+}
+
+/* 3x3 Sub-grid dividing lines */
+.cell-wrapper.border-bottom {
+    border-bottom: 2px solid var(--board-border, #333);
+}
+.cell-wrapper.border-right {
+    border-right: 2px solid var(--board-border, #333);
+}
+
+.cell.hint-highlight {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+    transition: background-color 0.5s ease;
+}
+
+[data-theme="dark"] .cell.hint-highlight {
+    background-color: #664d03 !important;
+    color: #fff3cd !important;
+}
