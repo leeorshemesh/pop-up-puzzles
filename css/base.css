@@ -19,6 +19,14 @@
     --hint-text: #78350f;
     --line: #e5e7eb;
     --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    --key-bg: #ffffff;
+    --key-press: #dbeafe;
+    --timer-color: #1f2937;
+    --select-bg: #ffffff;
+    --pause-label: #1f2937;
+    --exact: #15803d;
+    --present: #d97706;
+    --absent: #9ca3af;
     --play-width: min(100%, 460px);
 }
 
@@ -36,13 +44,21 @@
     --given-bg: #1f2937;
     --user: #93c5fd;
     --highlight: #1e3a5f;
-    --selected: #1d4ed8;
+    --selected: #1e3a8a;
     --invalid-bg: #7f1d1d;
     --invalid-text: #fee2e2;
     --hint-bg: #854d0e;
     --hint-text: #fef3c7;
     --line: #374151;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --key-bg: #1c1f26;
+    --key-press: #1e3a5f;
+    --timer-color: #e5e7eb;
+    --select-bg: #1c1f26;
+    --pause-label: #f9fafb;
+    --exact: #22c55e;
+    --present: #fbbf24;
+    --absent: #6b7280;
 }
 
 [data-theme="sunset"] {
@@ -59,13 +75,21 @@
     --given-bg: #4a2836;
     --user: #fbbf24;
     --highlight: #5b2d3c;
-    --selected: #b45309;
+    --selected: #7c2d12;
     --invalid-bg: #7f1d1d;
     --invalid-text: #fee2e2;
     --hint-bg: #854d0e;
     --hint-text: #fef3c7;
     --line: #6b3a4a;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --key-bg: #3d2230;
+    --key-press: #5b2d3c;
+    --timer-color: #fde7d2;
+    --select-bg: #3d2230;
+    --pause-label: #fde7d2;
+    --exact: #4ade80;
+    --present: #fbbf24;
+    --absent: #a78b8b;
 }
 
 [data-bg="grid-paper"] {
@@ -77,7 +101,8 @@
 
 [data-hide-timer="true"] .timer-display,
 [data-hide-timer="true"] #win-time-row,
-[data-hide-timer="true"] .time-label {
+[data-hide-timer="true"] .time-label,
+[data-hide-timer="true"] .best-line {
     display: none !important;
 }
 
@@ -91,6 +116,11 @@ body {
     background-color: var(--bg);
     color: var(--text);
     transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body[data-theme="dark"],
+body[data-theme="sunset"] {
+    color-scheme: dark;
 }
 
 button, input, select { font: inherit; color: inherit; }
@@ -212,6 +242,16 @@ button, input, select { font: inherit; color: inherit; }
     border-radius: 16px;
     text-align: center;
     box-shadow: var(--shadow);
+    animation: modal-in 0.28s ease;
+}
+
+@keyframes modal-in {
+    from { transform: scale(0.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-card { animation: none; }
 }
 
 .modal-card h2 { margin: 0 0 8px; }

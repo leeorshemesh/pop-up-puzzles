@@ -49,6 +49,18 @@ window.Profile = (function () {
             } else {
                 item.textContent = `${puzzle.name}: ${entry.total} dailies`;
             }
+            const bests = window.Store.getBests(puzzle.id);
+            const hasBest = puzzle.difficulties.some((level) => bests[level] != null);
+            if (hasBest && !window.Store.hideTimers()) {
+                const best = document.createElement('div');
+                best.className = 'best-line';
+                best.textContent = `Best · ${puzzle.difficulties.map((level) => {
+                    const time = bests[level];
+                    const label = window.PuzzleUtil.difficultyLabel(level);
+                    return `${label} ${time == null ? '—' : window.PuzzleUtil.formatTime(time)}`;
+                }).join(' · ')}`;
+                item.appendChild(best);
+            }
             list.appendChild(item);
         });
     }

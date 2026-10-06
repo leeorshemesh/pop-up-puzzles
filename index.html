@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pop Up Puzzles</title>
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/home.css">
-    <link rel="stylesheet" href="css/play.css">
+    <link rel="stylesheet" href="css/base.css?v=5">
+    <link rel="stylesheet" href="css/home.css?v=5">
+    <link rel="stylesheet" href="css/play.css?v=5">
 </head>
 <body>
     <div class="app">
@@ -88,10 +88,10 @@
                         <span></span><span></span><span></span>
                     </button>
                     <div id="play-menu" class="popout menu-pop" hidden>
-                        <button type="button" id="btn-hint">Reveal Hint</button>
-                        <button type="button" id="btn-solve">Reveal Solution</button>
-                        <button type="button" id="btn-check">Check Puzzle</button>
-                        <button type="button" id="btn-restart">Restart</button>
+                        <button type="button" id="btn-hint" data-sudoku-only>Reveal Hint</button>
+                        <button type="button" id="btn-solve" data-sudoku-only>Reveal Solution</button>
+                        <button type="button" id="btn-check" data-sudoku-only>Check Puzzle</button>
+                        <button type="button" id="btn-restart" data-sudoku-only>Restart</button>
                         <label class="switch-row">
                             <span>Dark mode</span>
                             <input type="checkbox" id="theme-play">
@@ -116,7 +116,9 @@
                 </div>
                 <div class="board-stage">
                     <div id="sudoku-board" role="grid" aria-label="Sudoku board"></div>
-                    <div id="pause-overlay" class="pause-overlay" hidden></div>
+                    <div id="pause-overlay" class="pause-overlay" hidden>
+                        <p class="pause-label">Game Paused</p>
+                    </div>
                 </div>
                 <label class="notes-switch">
                     <span>Notes</span>
@@ -133,6 +135,37 @@
                     <button type="button" class="key" data-value="8">8</button>
                     <button type="button" class="key" data-value="9">9</button>
                     <button type="button" class="key key-erase" data-value="erase">Erase</button>
+                </div>
+            </div>
+
+            <div id="wordle-play" hidden>
+                <p id="wordle-status" class="status" aria-live="polite"></p>
+                <div id="wordle-grid"></div>
+                <div id="wordle-keyboard"></div>
+            </div>
+
+            <div id="minesweeper-play" hidden>
+                <p id="mine-status" class="status" aria-live="polite"></p>
+                <div class="board-tools">
+                    <span id="mine-count" class="mine-count">000</span>
+                    <span id="mine-timer" class="timer-display">00:00</span>
+                    <button type="button" id="btn-mine-pause" class="icon-btn pause-btn" aria-label="Pause">
+                        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
+                            <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
+                        </svg>
+                        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M8 5v14l11-7z" fill="currentColor"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="mine-frame">
+                    <div class="mine-scroll">
+                        <div id="mine-board" role="grid" aria-label="Minesweeper board"></div>
+                    </div>
+                    <div id="mine-pause" class="pause-overlay" hidden>
+                        <p class="pause-label">Game Paused</p>
+                    </div>
                 </div>
             </div>
 
@@ -161,12 +194,15 @@
         </div>
     </div>
 
-    <script src="js/storage.js"></script>
-    <script src="js/puzzles.js"></script>
-    <script src="js/profile.js"></script>
-    <script src="js/shop.js"></script>
-    <script src="js/sudoku.js"></script>
-    <script src="js/placeholders.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/storage.js?v=5"></script>
+    <script src="js/puzzles.js?v=5"></script>
+    <script src="js/profile.js?v=5"></script>
+    <script src="js/shop.js?v=5"></script>
+    <script src="js/sudoku.js?v=5"></script>
+    <script src="js/words.js?v=5"></script>
+    <script src="js/wordle.js?v=5"></script>
+    <script src="js/minesweeper.js?v=5"></script>
+    <script src="js/placeholders.js?v=5"></script>
+    <script src="js/app.js?v=5"></script>
 </body>
 </html>

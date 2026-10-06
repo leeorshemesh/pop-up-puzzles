@@ -25,6 +25,7 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-weight: 700;
     font-size: 1.15rem;
+    color: var(--timer-color);
 }
 
 .pause-btn .icon-play { display: none; }
@@ -113,7 +114,21 @@
 .pause-overlay {
     position: absolute;
     inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     pointer-events: none;
+}
+
+.pause-label {
+    margin: 0;
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
+    color: var(--pause-label);
+    font-size: 1.35rem;
+    font-weight: 700;
 }
 
 .notes-switch {
@@ -165,7 +180,14 @@
     min-height: 48px;
     font-size: 1.2rem;
     font-weight: 700;
+    background: var(--key-bg);
     touch-action: manipulation;
+    transition: transform 0.08s ease, background 0.08s ease;
+}
+
+.key:active:not(:disabled) {
+    transform: scale(0.96);
+    background: var(--key-press);
 }
 
 .key-erase {
@@ -182,4 +204,170 @@
     text-align: center;
     color: var(--muted);
     font-size: 1.1rem;
+}
+
+#wordle-grid {
+    width: min(100%, 320px);
+    margin: 8px auto 16px;
+    display: grid;
+    gap: 6px;
+}
+
+.wordle-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+
+.wordle-tile {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--cell-border);
+    background: var(--cell-bg);
+    color: var(--text);
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.wordle-tile.exact,
+.wordle-key.exact {
+    background: var(--exact);
+    border-color: var(--exact);
+    color: #ffffff;
+}
+
+.wordle-tile.present,
+.wordle-key.present {
+    background: var(--present);
+    border-color: var(--present);
+    color: #1f2937;
+}
+
+.wordle-tile.absent {
+    background: var(--absent);
+    border-color: var(--absent);
+    color: #ffffff;
+}
+
+.wordle-row.shake {
+    animation: tile-shake 0.35s;
+}
+
+@keyframes tile-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+}
+
+#wordle-keyboard {
+    width: min(100%, 420px);
+    margin: 0 auto;
+    display: grid;
+    gap: 6px;
+}
+
+.wordle-keys {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+}
+
+.wordle-key {
+    min-width: 30px;
+    height: 46px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--key-bg);
+    color: var(--text);
+    font-weight: 700;
+    text-transform: uppercase;
+    touch-action: manipulation;
+}
+
+.wordle-key.wide {
+    min-width: 52px;
+    font-size: 0.75rem;
+}
+
+.wordle-key.absent {
+    background: var(--absent);
+    color: #ffffff;
+    opacity: 0.38;
+}
+
+.mine-count {
+    min-width: 3.2em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 700;
+    color: var(--timer-color);
+}
+
+.mine-frame {
+    position: relative;
+    width: var(--play-width);
+    margin: 0 auto;
+}
+
+.mine-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+#mine-board {
+    display: grid;
+    width: max-content;
+    margin: 0 auto;
+    gap: 1px;
+    padding: 1px;
+    background: var(--board-border);
+    user-select: none;
+    touch-action: manipulation;
+}
+
+#mine-board.paused {
+    filter: blur(5px);
+    pointer-events: none;
+}
+
+.mine-cell {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    background: var(--cell-bg);
+    color: var(--text);
+}
+
+.mine-cell.covered {
+    background: var(--given-bg);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--panel) 55%, var(--board-border));
+}
+
+.mine-cell.flagged { color: #dc2626; }
+.mine-cell.wrong-flag { color: var(--invalid-text); background: var(--invalid-bg); }
+.mine-cell.mine { background: var(--cell-bg); }
+.mine-cell.hit { background: var(--invalid-bg); color: var(--invalid-text); }
+
+.mine-cell.n1 { color: #2563eb; }
+.mine-cell.n2 { color: #15803d; }
+.mine-cell.n3 { color: #dc2626; }
+.mine-cell.n4 { color: #7c3aed; }
+.mine-cell.n5 { color: #b45309; }
+.mine-cell.n6 { color: #0f766e; }
+.mine-cell.n7 { color: var(--text); }
+.mine-cell.n8 { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+    .wordle-row.shake { animation: none; }
 }

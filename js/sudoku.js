@@ -12,7 +12,6 @@ window.Sudoku = (function () {
     const victoryModal = document.getElementById('victory-modal');
     const confirmModal = document.getElementById('confirm-modal');
     const confirmMessage = document.getElementById('confirm-message');
-    const playAgainButton = document.getElementById('btn-play-again');
 
     let solution = null;
     let givens = null;
@@ -32,6 +31,9 @@ window.Sudoku = (function () {
     let confirmResolver = null;
     let generationToken = 0;
     let lastAward = 0;
+    let revealing = false;
+    let revealTimer = null;
+    let revealToken = 0;
 
     function emptyBoard() {
         return Array.from({ length: 9 }, () => Array(9).fill(0));
@@ -170,7 +172,14 @@ window.Sudoku = (function () {
     }
 
     function inputLocked() {
-        return gameCompleted || puzzleRevealed;
+        return gameCompleted || puzzleRevealed || revealing;
+    }
+
+    function isBoard(board) {
+        return Array.isArray(board)
+            && board.length === 9
+            && board.every((row) => Array.isArray(row) && row.length === 9
+                && row.every((value) => value >= 0 && value <= 9));
     }
 
     function setStatus(text) {
@@ -192,7 +201,7 @@ window.Sudoku = (function () {
         timerInterval = setInterval(() => {
             secondsElapsed += 1;
             updateTimerDisplay();
-            saveCurrentDaily();
+            persistProgress();
         }, 1000);
     }
 
@@ -205,6 +214,31 @@ window.Sudoku = (function () {
             notes: cellNotes.map((row) => row.map((notes) => [...notes].sort((a, b) => a - b))),
             revealed: puzzleRevealed && !gameCompleted
         });
+    }
+
+    function saveActiveSession() {
+        if (!puzzleReady || !boardState || !givens || !solution || !cellNotes || !difficulty || !gameMode) return;
+        if (gameCompleted || puzzleRevealed || revealing) {
+            window.Store.clearSession();
+            return;
+        }
+        window.Store.setSession({
+            puzzleId: PUZZLE_ID,
+            mode: gameMode,
+            level: difficulty,
+            date: gameMode === 'daily' ? window.PuzzleUtil.localDateKey() : null,
+            status: 'in-progress',
+            seconds: secondsElapsed,
+            entries: cloneBoard(boardState),
+            notes: cellNotes.map((row) => row.map((notes) => [...notes].sort((a, b) => a - b))),
+            givens: cloneBoard(givens),
+            solution: cloneBoard(solution)
+        });
+    }
+
+    function persistProgress() {
+        saveCurrentDaily();
+        saveActiveSession();
     }
 
     function cellElement(row, col) {
@@ -293,7 +327,7 @@ window.Sudoku = (function () {
         boardEl.classList.toggle('paused', showOverlay);
         document.getElementById('btn-hint').disabled = !puzzleReady || locked;
         document.getElementById('btn-solve').disabled = !puzzleReady || locked;
-        document.getElementById('btn-check').disabled = !puzzleReady || gameCompleted;
+        document.getElementById('btn-check').disabled = !puzzleReady || gameCompleted || revealing;
     }
 
     function notesFromSaved(saved) {
@@ -324,7 +358,35 @@ window.Sudoku = (function () {
         return next;
     }
 
+    function haltRevealAnimation() {
+        revealing = false;
+        revealToken += 1;
+        clearTimeout(revealTimer);
+        revealTimer = null;
+    }
+
+    function commitReveal() {
+        if (!revealing || !solution || !boardState || !cellNotes) return;
+        haltRevealAnimation();
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                boardState[row][col] = solution[row][col];
+                cellNotes[row][col].clear();
+            }
+        }
+        puzzleRevealed = true;
+        isPaused = false;
+        stopTicking();
+        if (puzzleReady) {
+            clearMarks();
+            renderBoard();
+            syncControls();
+            setStatus('Solution revealed. This run is not counted as solved.');
+        }
+    }
+
     function resetPlayState() {
+        haltRevealAnimation();
         stopTicking();
         selected = null;
         setNotesMode(false);
@@ -349,19 +411,19 @@ window.Sudoku = (function () {
         givens = generated.puzzle;
         playTitle.textContent = `${mode === 'daily' ? 'Daily' : 'New game'} · ${window.PuzzleUtil.difficultyLabel(level)}`;
 
-        if (mode === 'daily' && saved && saved.status === 'completed') {
+        if (saved && saved.status === 'completed') {
             boardState = cloneBoard(generated.solution);
             cellNotes = emptyNotes();
             secondsElapsed = saved.seconds || 0;
             gameCompleted = true;
             setStatus(window.Store.hideTimers() ? 'Completed' : `Completed in ${window.PuzzleUtil.formatTime(secondsElapsed)}`);
-        } else if (mode === 'daily' && saved && saved.revealed) {
+        } else if (saved && saved.revealed) {
             boardState = cloneBoard(generated.solution);
             cellNotes = emptyNotes();
             secondsElapsed = saved.seconds || 0;
             puzzleRevealed = true;
             setStatus('Solution revealed. This run is not counted as solved.');
-        } else if (mode === 'daily' && saved) {
+        } else if (saved && Array.isArray(saved.entries)) {
             boardState = boardFromSaved(saved, givens);
             cellNotes = notesFromSaved(saved);
             secondsElapsed = saved.seconds || 0;
@@ -378,18 +440,53 @@ window.Sudoku = (function () {
         renderBoard();
         syncControls();
         if (!isPaused && !inputLocked()) startTicking();
+        persistProgress();
+    }
+
+    function showSudokuScreen() {
+        window.App.preparePlay(PUZZLE_ID);
+    }
+
+    function usableSession(saved) {
+        if (!saved || saved.puzzleId !== PUZZLE_ID || saved.status !== 'in-progress') return false;
+        if (saved.mode !== 'daily' && saved.mode !== 'free') return false;
+        if (!['easy', 'medium', 'hard'].includes(saved.level)) return false;
+        return isBoard(saved.givens) && isBoard(saved.solution) && isBoard(saved.entries);
+    }
+
+    function restoreSession(saved) {
+        if (!usableSession(saved)) return false;
+        generationToken += 1;
+        resetPlayState();
+        showSudokuScreen();
+        beginSession(saved.mode, saved.level, {
+            puzzle: saved.givens,
+            solution: saved.solution
+        }, {
+            status: 'in-progress',
+            seconds: saved.seconds || 0,
+            entries: saved.entries,
+            notes: saved.notes
+        });
+        isPaused = true;
+        stopTicking();
+        syncControls();
+        persistProgress();
+        return true;
     }
 
     function startGeneratedGame(mode, level, rng, saved) {
+        if (revealing) {
+            commitReveal();
+            persistProgress();
+        }
         const token = ++generationToken;
         resetPlayState();
+        window.Store.clearSession();
         gameMode = null;
         difficulty = null;
         boardState = null;
-        document.getElementById('sudoku-play').hidden = false;
-        document.getElementById('coming-soon').hidden = true;
-        document.getElementById('play-menu-wrap').hidden = false;
-        window.App.showPlay(PUZZLE_ID);
+        showSudokuScreen();
         playTitle.textContent = `${mode === 'daily' ? 'Daily' : 'New game'} · ${window.PuzzleUtil.difficultyLabel(level)}`;
         setStatus('Preparing puzzle…');
         syncControls();
@@ -415,7 +512,8 @@ window.Sudoku = (function () {
     }
 
     function leave() {
-        saveCurrentDaily();
+        if (revealing) commitReveal();
+        persistProgress();
         generationToken += 1;
         stopTicking();
         puzzleReady = false;
@@ -423,7 +521,7 @@ window.Sudoku = (function () {
     }
 
     function selectCell(row, col) {
-        if (!puzzleReady || isPaused) return;
+        if (!puzzleReady || isPaused || inputLocked()) return;
         selected = { row, col };
         renderBoard();
     }
@@ -457,7 +555,7 @@ window.Sudoku = (function () {
         }
         clearMarks();
         renderBoard();
-        saveCurrentDaily();
+        persistProgress();
         if (!notesMode) checkWin();
     }
 
@@ -471,7 +569,7 @@ window.Sudoku = (function () {
             cellNotes[row][col].clear();
         }
         renderBoard();
-        saveCurrentDaily();
+        persistProgress();
     }
 
     function pauseGame() {
@@ -479,7 +577,7 @@ window.Sudoku = (function () {
         isPaused = true;
         stopTicking();
         syncControls();
-        saveCurrentDaily();
+        persistProgress();
     }
 
     function resumeGame() {
@@ -493,42 +591,90 @@ window.Sudoku = (function () {
         else pauseGame();
     }
 
-    function candidateCount(row, col) {
-        let count = 0;
-        for (let num = 1; num <= 9; num++) {
-            if (isValid(boardState, row, col, num)) count += 1;
-        }
-        return count;
+    function cellBreaksRules(row, col) {
+        const value = boardState[row][col];
+        boardState[row][col] = 0;
+        const ok = isValid(boardState, row, col, value);
+        boardState[row][col] = value;
+        return !ok;
     }
 
-    function pickHintCell() {
-        let best = null;
-        let bestCount = 10;
-        let fallback = null;
+    function findConflict() {
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                const value = boardState[row][col];
+                if (value === 0 || givens[row][col] !== 0) continue;
+                if (value !== solution[row][col] || cellBreaksRules(row, col)) return { row, col };
+            }
+        }
+        return null;
+    }
+
+    function candidatesFor(row, col) {
+        const nums = [];
+        for (let num = 1; num <= 9; num++) {
+            if (isValid(boardState, row, col, num)) nums.push(num);
+        }
+        return nums;
+    }
+
+    function findNakedSingle() {
         for (let row = 0; row < 9; row++) {
             for (let col = 0; col < 9; col++) {
                 if (boardState[row][col] !== 0) continue;
-                if (!fallback) fallback = { row, col };
-                const count = candidateCount(row, col);
-                if (count === 1) return { row, col };
-                if (count > 0 && count < bestCount) {
-                    bestCount = count;
-                    best = { row, col };
+                const nums = candidatesFor(row, col);
+                if (nums.length === 1) return { row, col, num: nums[0] };
+            }
+        }
+        return null;
+    }
+
+    function unitCells(kind, index) {
+        const cells = [];
+        for (let offset = 0; offset < 9; offset++) {
+            if (kind === 'row') cells.push([index, offset]);
+            else if (kind === 'col') cells.push([offset, index]);
+            else cells.push([3 * Math.floor(index / 3) + Math.floor(offset / 3), 3 * (index % 3) + (offset % 3)]);
+        }
+        return cells;
+    }
+
+    function findHiddenSingle() {
+        for (const kind of ['row', 'col', 'box']) {
+            for (let index = 0; index < 9; index++) {
+                const unit = unitCells(kind, index);
+                for (let num = 1; num <= 9; num++) {
+                    if (unit.some(([row, col]) => boardState[row][col] === num)) continue;
+                    const spots = unit.filter(([row, col]) => boardState[row][col] === 0 && isValid(boardState, row, col, num));
+                    if (spots.length === 1) return { row: spots[0][0], col: spots[0][1], num };
                 }
             }
         }
-        return best || fallback;
+        return null;
     }
 
-    function giveHint() {
-        if (!puzzleReady || inputLocked()) return;
-        window.App.closePopouts();
-        const spot = pickHintCell();
-        if (!spot) {
-            setStatus('No empty cells left.');
-            return;
+    function findFewestSolutionCell() {
+        const copy = cloneBoard(boardState);
+        let best = null;
+        let bestCount = 10;
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                if (copy[row][col] !== 0) continue;
+                let count = 0;
+                for (let num = 1; num <= 9; num++) {
+                    if (isValid(copy, row, col, num)) count += 1;
+                }
+                if (count > 0 && count < bestCount) {
+                    bestCount = count;
+                    best = { row, col, num: solution[row][col] };
+                }
+            }
         }
-        boardState[spot.row][spot.col] = solution[spot.row][spot.col];
+        return best;
+    }
+
+    function placeHint(spot) {
+        boardState[spot.row][spot.col] = spot.num;
         cellNotes[spot.row][spot.col].clear();
         clearMarks();
         renderBoard();
@@ -537,31 +683,67 @@ window.Sudoku = (function () {
         clearTimeout(hintTimer);
         hintTimer = setTimeout(() => cell.classList.remove('hint'), 2000);
         setStatus('Hint placed.');
-        saveCurrentDaily();
+        persistProgress();
         checkWin();
+    }
+
+    function giveHint() {
+        if (!puzzleReady || inputLocked()) return;
+        window.App.closePopouts();
+        const conflict = findConflict();
+        if (conflict) {
+            clearMarks();
+            cellElement(conflict.row, conflict.col).classList.add('invalid');
+            setStatus('There\'s a mistake in a filled cell.');
+            return;
+        }
+        const spot = findNakedSingle() || findHiddenSingle() || findFewestSolutionCell();
+        if (!spot) {
+            setStatus('No empty cells left.');
+            return;
+        }
+        placeHint(spot);
     }
 
     function revealSolution() {
         if (!puzzleReady || inputLocked()) return;
         window.App.closePopouts();
+        const cells = [];
         for (let row = 0; row < 9; row++) {
             for (let col = 0; col < 9; col++) {
-                boardState[row][col] = solution[row][col];
-                cellNotes[row][col].clear();
+                if (boardState[row][col] !== solution[row][col]) cells.push([row, col]);
             }
         }
-        puzzleRevealed = true;
+        revealing = true;
         isPaused = false;
         stopTicking();
         clearMarks();
-        renderBoard();
         syncControls();
-        setStatus('Solution revealed. This run is not counted as solved.');
-        saveCurrentDaily();
+        setStatus('');
+        const token = ++revealToken;
+        let index = 0;
+        const step = () => {
+            if (!revealing || token !== revealToken) return;
+            if (index >= cells.length) {
+                revealing = false;
+                puzzleRevealed = true;
+                syncControls();
+                setStatus('Solution revealed. This run is not counted as solved.');
+                persistProgress();
+                return;
+            }
+            const [row, col] = cells[index];
+            index += 1;
+            boardState[row][col] = solution[row][col];
+            cellNotes[row][col].clear();
+            renderBoard();
+            revealTimer = setTimeout(step, 25);
+        };
+        step();
     }
 
     function checkPuzzle() {
-        if (!puzzleReady || gameCompleted) return;
+        if (!puzzleReady || gameCompleted || revealing) return;
         window.App.closePopouts();
         clearMarks();
         let mistakes = 0;
@@ -581,9 +763,11 @@ window.Sudoku = (function () {
     }
 
     function applyRestart() {
+        haltRevealAnimation();
         boardState = cloneBoard(givens);
         cellNotes = emptyNotes();
         selected = null;
+        setNotesMode(false);
         puzzleRevealed = false;
         gameCompleted = false;
         isPaused = false;
@@ -594,7 +778,23 @@ window.Sudoku = (function () {
         renderBoard();
         syncControls();
         startTicking();
-        saveCurrentDaily();
+        persistProgress();
+    }
+
+    function askConfirm(message, okLabel) {
+        window.App.closePopouts();
+        confirmMessage.textContent = message;
+        const okButton = document.getElementById('btn-confirm-ok');
+        okButton.textContent = okLabel || 'OK';
+        confirmModal.hidden = false;
+        return new Promise((resolve) => {
+            confirmResolver = (accepted) => {
+                confirmModal.hidden = true;
+                confirmResolver = null;
+                okButton.textContent = 'Restart';
+                resolve(!!accepted);
+            };
+        });
     }
 
     function restartPuzzle() {
@@ -604,17 +804,13 @@ window.Sudoku = (function () {
             applyRestart();
             return;
         }
-        confirmMessage.textContent = "Restart today's puzzle? Your saved time and progress will be cleared.";
-        confirmModal.hidden = false;
-        confirmResolver = (accepted) => {
-            confirmModal.hidden = true;
-            confirmResolver = null;
+        askConfirm("Restart today's puzzle? Your saved time and progress will be cleared.", 'Restart').then((accepted) => {
             if (accepted) applyRestart();
-        };
+        });
     }
 
     function checkWin() {
-        if (!puzzleReady || puzzleRevealed || gameCompleted) return;
+        if (!puzzleReady || puzzleRevealed || gameCompleted || revealing) return;
         for (let row = 0; row < 9; row++) {
             for (let col = 0; col < 9; col++) {
                 if (boardState[row][col] !== solution[row][col]) return;
@@ -631,26 +827,24 @@ window.Sudoku = (function () {
                 difficulty,
                 window.PuzzleUtil.trophyFor(PUZZLE_ID, difficulty)
             );
+            window.Store.recordBest(PUZZLE_ID, difficulty, secondsElapsed);
         }
-        saveCurrentDaily();
+        persistProgress();
         syncControls();
-        document.getElementById('win-time').textContent = window.PuzzleUtil.formatTime(secondsElapsed);
-        document.getElementById('win-trophy').textContent = gameMode === 'daily'
-            ? (lastAward ? `+${lastAward} ${lastAward === 1 ? 'trophy' : 'trophies'}` : 'Trophies already claimed for this daily.')
-            : '';
-        playAgainButton.textContent = gameMode === 'daily' ? 'Back to Sudoku' : 'Play again';
         setStatus(window.Store.hideTimers() ? 'Solved.' : `Solved in ${window.PuzzleUtil.formatTime(secondsElapsed)}.`);
         window.App.refreshChrome();
-        victoryModal.hidden = false;
-    }
-
-    function finishVictory() {
-        victoryModal.hidden = true;
-        if (gameMode === 'daily') {
-            leave();
-            return;
-        }
-        startFree(difficulty);
+        window.App.showVictory({
+            title: 'Puzzle solved',
+            seconds: secondsElapsed,
+            trophy: gameMode === 'daily'
+                ? (lastAward ? `+${lastAward} ${lastAward === 1 ? 'trophy' : 'trophies'}` : 'Trophies already claimed for this daily.')
+                : '',
+            again: gameMode === 'daily' ? 'Back to Sudoku' : 'Play again',
+            onAgain: () => {
+                if (gameMode === 'daily') leave();
+                else startFree(difficulty);
+            }
+        });
     }
 
     function onKeyDown(event) {
@@ -684,7 +878,6 @@ window.Sudoku = (function () {
         document.getElementById('btn-solve').addEventListener('click', revealSolution);
         document.getElementById('btn-check').addEventListener('click', checkPuzzle);
         document.getElementById('btn-restart').addEventListener('click', restartPuzzle);
-        playAgainButton.addEventListener('click', finishVictory);
         document.querySelectorAll('.key').forEach((key) => {
             key.addEventListener('click', () => {
                 if (key.disabled) return;
@@ -698,10 +891,14 @@ window.Sudoku = (function () {
         document.getElementById('btn-confirm-cancel').addEventListener('click', () => {
             if (confirmResolver) confirmResolver(false);
         });
+        const saveForHide = () => {
+            if (revealing) commitReveal();
+            persistProgress();
+        };
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') saveCurrentDaily();
+            if (document.visibilityState === 'hidden') saveForHide();
         });
-        window.addEventListener('pagehide', saveCurrentDaily);
+        window.addEventListener('pagehide', saveForHide);
         syncControls();
     }
 
@@ -709,8 +906,10 @@ window.Sudoku = (function () {
         bind,
         startDaily,
         startFree,
+        restoreSession,
+        askConfirm,
         leave,
         onKeyDown,
-        save: saveCurrentDaily
+        save: persistProgress
     };
 })();

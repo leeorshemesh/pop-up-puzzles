@@ -122,6 +122,14 @@
 .new-game-select {
     width: 100%;
     padding: 10px 12px;
+    background: var(--select-bg);
+    color: var(--text);
+}
+
+.best-line {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 0.85rem;
 }
 
 .avatar {

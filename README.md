@@ -1,6 +1,6 @@
 # Pop Up Puzzles
 
-A static puzzle site. Sudoku is playable. Wordle and Minesweeper are placeholders.
+A static puzzle site. Sudoku, Wordle, and Minesweeper are playable.
 
 ## Run
 
@@ -17,14 +17,14 @@ Then visit `http://127.0.0.1:8080/`.
 - Home: puzzle cards. A card flips to today’s daily and a new-game dropdown.
 - Profile: name, avatar colors, trophies, and daily stats.
 - Shop: spend trophies on a theme, background, or avatar outfit.
-- Play: Sudoku, or a coming-soon page for the other puzzles.
+- Play: Sudoku, Wordle, or Minesweeper.
 
 ## Trophies
 
 Only a fair daily solve awards trophies, once per date and difficulty.
 
 - Easy 1, Medium 2, Hard 3
-- Puzzles without difficulty (Wordle later): 2
+- Puzzles without difficulty (Wordle): 2
 
 Reveal Solution and new games do not award trophies.
 
@@ -36,7 +36,10 @@ Reveal Solution and new games do not award trophies.
 - `js/puzzles.js`: puzzle registry
 - `js/profile.js`, `js/shop.js`
 - `js/sudoku.js`: Sudoku generator and play
-- `js/placeholders.js`: Wordle and Minesweeper stubs
+- `js/words.js`: five-letter word list
+- `js/wordle.js`: Wordle
+- `js/minesweeper.js`: Minesweeper
+- `js/placeholders.js`: coming-soon page for puzzles that are not ready
 - `js/app.js`: screens, cards, settings
 
 ## Storage keys

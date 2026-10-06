@@ -7,7 +7,9 @@ window.Store = (function () {
         UNLOCKS: 'popup-unlocks',
         EQUIP: 'popup-equip',
         DAILY: 'popup-daily-progress',
-        AWARDS: 'popup-trophy-awards'
+        AWARDS: 'popup-trophy-awards',
+        SESSION: 'popup-active-session',
+        BESTS: 'popup-best-times'
     };
 
     const DEFAULT_PROFILE = {
@@ -141,6 +143,37 @@ window.Store = (function () {
         return amount;
     }
 
+    function getSession() {
+        const session = readJson(KEYS.SESSION, null);
+        return session && typeof session === 'object' ? session : null;
+    }
+
+    function setSession(session) {
+        writeJson(KEYS.SESSION, session);
+    }
+
+    function clearSession() {
+        localStorage.removeItem(KEYS.SESSION);
+    }
+
+    function getBests(puzzleId) {
+        const bests = readJson(KEYS.BESTS, {});
+        const entry = bests && typeof bests === 'object' ? bests[puzzleId] : null;
+        return entry && typeof entry === 'object' ? { ...entry } : {};
+    }
+
+    function recordBest(puzzleId, level, seconds) {
+        const time = Math.max(0, seconds | 0);
+        const bests = readJson(KEYS.BESTS, {});
+        const store = bests && typeof bests === 'object' ? bests : {};
+        store[puzzleId] = store[puzzleId] && typeof store[puzzleId] === 'object' ? store[puzzleId] : {};
+        const current = store[puzzleId][level];
+        if (current != null && time >= current) return false;
+        store[puzzleId][level] = time;
+        writeJson(KEYS.BESTS, store);
+        return true;
+    }
+
     function dailyStats() {
         const store = dailyStore();
         const stats = {};
@@ -176,6 +209,11 @@ window.Store = (function () {
         getDaily,
         setDaily,
         awardIfNeeded,
+        getSession,
+        setSession,
+        clearSession,
+        getBests,
+        recordBest,
         dailyStats
     };
 })();

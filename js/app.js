@@ -68,7 +68,7 @@ window.App = (function () {
             button.className = 'choice';
             if (record && record.status === 'completed') button.classList.add('completed');
             const name = document.createElement('span');
-            name.textContent = level === 'default' ? 'Play' : window.PuzzleUtil.difficultyLabel(level);
+            name.textContent = level === 'default' ? 'Daily' : window.PuzzleUtil.difficultyLabel(level);
             const state = document.createElement('small');
             state.className = record && !window.Store.hideTimers() ? 'time-label' : '';
             state.textContent = window.PuzzleUtil.dailyStateText(record);
@@ -76,12 +76,50 @@ window.App = (function () {
             button.addEventListener('click', () => startPuzzle(id, 'daily', level === 'default' ? null : level));
             row.appendChild(button);
         });
+        renderBestLine(card, puzzle);
+    }
+
+    function renderBestLine(card, puzzle) {
+        let line = card.querySelector('.best-line');
+        if (puzzle.id !== 'sudoku') {
+            if (line) line.remove();
+            return;
+        }
+        if (!line) {
+            line = document.createElement('p');
+            line.className = 'best-line';
+            card.querySelector('.new-game-select').insertAdjacentElement('beforebegin', line);
+        }
+        const bests = window.Store.getBests(puzzle.id);
+        const hasAny = puzzle.difficulties.some((level) => bests[level] != null);
+        if (!hasAny || window.Store.hideTimers()) {
+            line.hidden = true;
+            line.textContent = '';
+            return;
+        }
+        const text = puzzle.difficulties.map((level) => {
+            const time = bests[level];
+            const label = window.PuzzleUtil.difficultyLabel(level);
+            return `${label} ${time == null ? '—' : window.PuzzleUtil.formatTime(time)}`;
+        }).join(' · ');
+        line.hidden = false;
+        line.textContent = `Best · ${text}`;
     }
 
     function startPuzzle(id, mode, level) {
         if (id === 'sudoku') {
             if (mode === 'daily') window.Sudoku.startDaily(level);
             else window.Sudoku.startFree(level);
+            return;
+        }
+        if (id === 'wordle') {
+            if (mode === 'daily') window.Wordle.startDaily();
+            else window.Wordle.startFree();
+            return;
+        }
+        if (id === 'minesweeper') {
+            if (mode === 'daily') window.Mines.startDaily(level);
+            else window.Mines.startFree(level);
             return;
         }
         const label = mode === 'daily'
@@ -137,7 +175,10 @@ window.App = (function () {
                 const value = select.value;
                 select.value = '';
                 if (!value) return;
-                startPuzzle(puzzle.id, 'free', value === 'play' ? null : value);
+                window.Sudoku.askConfirm('Start a new game?', 'Start').then((accepted) => {
+                    if (!accepted) return;
+                    startPuzzle(puzzle.id, 'free', value === 'play' ? null : value);
+                });
             });
             grid.appendChild(card);
             if (openId === puzzle.id) fillCardBack(puzzle.id);
@@ -157,12 +198,36 @@ window.App = (function () {
     }
 
     function leavePlay() {
-        if (currentPuzzle === 'sudoku') {
-            window.Sudoku.leave();
-            return;
-        }
-        const id = currentPuzzle;
-        showHome(id);
+        if (currentPuzzle === 'sudoku') window.Sudoku.leave();
+        else if (currentPuzzle === 'wordle') window.Wordle.leave();
+        else if (currentPuzzle === 'minesweeper') window.Mines.leave();
+        else showHome(currentPuzzle);
+    }
+
+    let victoryNext = null;
+
+    function preparePlay(puzzleId) {
+        document.getElementById('sudoku-play').hidden = puzzleId !== 'sudoku';
+        document.getElementById('wordle-play').hidden = puzzleId !== 'wordle';
+        document.getElementById('minesweeper-play').hidden = puzzleId !== 'minesweeper';
+        document.getElementById('coming-soon').hidden = true;
+        document.getElementById('play-menu-wrap').hidden = false;
+        document.querySelectorAll('[data-sudoku-only]').forEach((node) => {
+            node.hidden = puzzleId !== 'sudoku';
+        });
+        document.getElementById('victory-modal').hidden = true;
+        showPlay(puzzleId);
+    }
+
+    function showVictory(options) {
+        document.getElementById('victory-title').textContent = options.title || 'Puzzle solved';
+        document.getElementById('win-time').textContent = window.PuzzleUtil.formatTime(options.seconds || 0);
+        document.getElementById('win-trophy').textContent = options.trophy || '';
+        document.getElementById('btn-play-again').textContent = options.again || 'Play again';
+        victoryNext = options.onAgain || null;
+        closePopouts();
+        document.getElementById('victory-modal').hidden = false;
+        refreshChrome();
     }
 
     function togglePopout(popout, button) {
@@ -185,6 +250,12 @@ window.App = (function () {
             button.addEventListener('click', () => showHome());
         });
         document.getElementById('btn-play-back').addEventListener('click', leavePlay);
+        document.getElementById('btn-play-again').addEventListener('click', () => {
+            document.getElementById('victory-modal').hidden = true;
+            const next = victoryNext;
+            victoryNext = null;
+            if (next) next();
+        });
         document.getElementById('btn-home-settings').addEventListener('click', (event) => {
             event.stopPropagation();
             togglePopout(document.getElementById('home-settings'), event.currentTarget);
@@ -213,7 +284,9 @@ window.App = (function () {
         });
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') closePopouts();
-            if (!screens.play.hidden) window.Sudoku.onKeyDown(event);
+            if (screens.play.hidden) return;
+            if (currentPuzzle === 'sudoku') window.Sudoku.onKeyDown(event);
+            else if (currentPuzzle === 'wordle') window.Wordle.onKeyDown(event);
         });
     }
 
@@ -223,6 +296,8 @@ window.App = (function () {
         closePopouts,
         showHome,
         showPlay,
+        preparePlay,
+        showVictory,
         renderCards,
         bind
     };
@@ -230,6 +305,8 @@ window.App = (function () {
 
 window.Profile.bind();
 window.Sudoku.bind();
+window.Wordle.bind();
+window.Mines.bind();
 window.App.bind();
 window.App.applyAppearance();
-window.App.showHome();
+if (!window.Sudoku.restoreSession(window.Store.getSession())) window.App.showHome();
