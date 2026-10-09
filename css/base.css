@@ -151,6 +151,20 @@ button, input, select { font: inherit; color: inherit; }
     cursor: not-allowed;
 }
 
+.shop-card button.btn {
+    color: var(--text);
+}
+
+.shop-card button.btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+}
+
+.shop-card button.btn:disabled {
+    opacity: 1;
+}
+
 .icon-btn {
     width: 42px;
     height: 42px;
@@ -190,6 +204,12 @@ button, input, select { font: inherit; color: inherit; }
     justify-content: space-between;
     gap: 16px;
     padding: 10px 12px;
+}
+
+.theme-select {
+    padding: 6px 8px;
+    background: var(--select-bg);
+    color: var(--text);
 }
 
 .menu-btn {

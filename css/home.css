@@ -31,12 +31,6 @@
     align-items: start;
 }
 
-.flip-card {
-    perspective: 1200px;
-}
-
-.flip-card.flipped { grid-column: 1 / -1; }
-
 .flip-inner { position: relative; }
 
 .card-front, .card-back {
@@ -44,7 +38,6 @@
     border: 1px solid var(--line);
     border-radius: 16px;
     box-shadow: var(--shadow);
-    transition: transform 0.45s ease, opacity 0.2s ease;
 }
 
 .card-front {
@@ -63,22 +56,51 @@
 .card-title { font-size: 1.7rem; font-weight: 700; }
 .card-copy { color: var(--muted); }
 
-.card-back { padding: 16px; }
-
-.flip-card:not(.flipped) .card-back {
+.card-back {
     position: absolute;
     inset: 0;
+    padding: 16px;
     transform: rotateY(180deg);
     opacity: 0;
     pointer-events: none;
 }
 
-.flip-card.flipped .card-front {
-    position: absolute;
+.card-scrim {
+    position: fixed;
     inset: 0;
-    transform: rotateY(180deg);
-    opacity: 0;
-    pointer-events: none;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.flip-card.flipped .card-back {
+    position: fixed;
+    z-index: 31;
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: min(640px, calc(100% - 32px));
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    padding: 28px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: perspective(1200px) translate(-50%, -50%) rotateY(0deg) scale(1);
+    animation: card-open 0.45s ease;
+}
+
+@keyframes card-open {
+    from {
+        opacity: 0;
+        transform: perspective(1200px) translate(-50%, -50%) rotateY(180deg) scale(0.86);
+    }
+    to {
+        opacity: 1;
+        transform: perspective(1200px) translate(-50%, -50%) rotateY(0deg) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flip-card.flipped .card-back { animation: none; }
 }
 
 .card-back-head {
@@ -119,9 +141,13 @@
 .choice small, .status { color: var(--muted); }
 .choice.completed small { color: var(--accent-strong); }
 
-.new-game-select {
+.new-game-select,
+.new-game-btn {
     width: 100%;
     padding: 10px 12px;
+}
+
+.new-game-select {
     background: var(--select-bg);
     color: var(--text);
 }
@@ -196,8 +222,8 @@
 
 .shop-list { display: grid; gap: 12px; }
 .shop-card { padding: 16px; display: grid; gap: 8px; }
-.shop-card h2 { margin: 0; font-size: 1.1rem; }
-.shop-card p { margin: 0; color: var(--muted); }
+.shop-card h2 { margin: 0; font-size: 1.1rem; color: var(--text); }
+.shop-card p { margin: 0; color: var(--text); }
 
 @media (max-width: 720px) {
     .puzzle-grid { grid-template-columns: 1fr; }

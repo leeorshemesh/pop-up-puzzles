@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pop Up Puzzles</title>
-    <link rel="stylesheet" href="css/base.css?v=5">
-    <link rel="stylesheet" href="css/home.css?v=5">
+    <link rel="stylesheet" href="css/base.css?v=7">
+    <link rel="stylesheet" href="css/home.css?v=6">
     <link rel="stylesheet" href="css/play.css?v=5">
 </head>
 <body>
@@ -32,8 +32,8 @@
                         </button>
                         <div id="home-settings" class="popout" hidden>
                             <label class="switch-row">
-                                <span>Dark mode</span>
-                                <input type="checkbox" id="theme-home">
+                                <span>Theme</span>
+                                <select id="theme-home" class="theme-select"></select>
                             </label>
                             <label class="switch-row">
                                 <span>Hide timers</span>
@@ -44,6 +44,7 @@
                 </div>
             </header>
             <div class="puzzle-grid" id="puzzle-grid"></div>
+            <div id="card-scrim" class="card-scrim" hidden></div>
         </section>
 
         <section id="screen-profile" hidden>
@@ -93,8 +94,8 @@
                         <button type="button" id="btn-check" data-sudoku-only>Check Puzzle</button>
                         <button type="button" id="btn-restart" data-sudoku-only>Restart</button>
                         <label class="switch-row">
-                            <span>Dark mode</span>
-                            <input type="checkbox" id="theme-play">
+                            <span>Theme</span>
+                            <select id="theme-play" class="theme-select"></select>
                         </label>
                     </div>
                 </div>
@@ -194,15 +195,15 @@
         </div>
     </div>
 
-    <script src="js/storage.js?v=5"></script>
+    <script src="js/storage.js?v=6"></script>
     <script src="js/puzzles.js?v=5"></script>
     <script src="js/profile.js?v=5"></script>
-    <script src="js/shop.js?v=5"></script>
+    <script src="js/shop.js?v=7"></script>
     <script src="js/sudoku.js?v=5"></script>
     <script src="js/words.js?v=5"></script>
     <script src="js/wordle.js?v=5"></script>
     <script src="js/minesweeper.js?v=5"></script>
     <script src="js/placeholders.js?v=5"></script>
-    <script src="js/app.js?v=5"></script>
+    <script src="js/app.js?v=7"></script>
 </body>
 </html>

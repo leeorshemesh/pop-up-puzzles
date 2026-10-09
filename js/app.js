@@ -21,21 +21,67 @@ window.App = (function () {
         document.getElementById('btn-menu').setAttribute('aria-expanded', 'false');
     }
 
+    function themeOptions() {
+        const builtIn = [
+            { value: 'light', label: 'Default', locked: false },
+            { value: 'dark', label: 'Dark', locked: false }
+        ];
+        const shopThemes = window.Shop.ITEMS.filter((item) => item.kind === 'theme').map((item) => {
+            const locked = !window.Store.hasUnlock(item.id);
+            const name = item.name.replace(/ theme$/i, '');
+            return {
+                value: item.value,
+                label: locked ? `${name} (locked)` : name,
+                locked
+            };
+        });
+        return builtIn.concat(shopThemes);
+    }
+
+    function resolvedTheme() {
+        const saved = window.Store.getTheme();
+        const match = themeOptions().find((option) => option.value === saved && !option.locked);
+        return match ? match.value : 'light';
+    }
+
+    function fillThemeSelect(select, theme) {
+        select.innerHTML = '';
+        themeOptions().forEach((option) => {
+            const node = document.createElement('option');
+            node.value = option.value;
+            node.textContent = option.label;
+            node.disabled = option.locked;
+            select.appendChild(node);
+        });
+        select.value = theme;
+        if (select.value !== theme) select.value = 'light';
+    }
+
     function applyAppearance() {
+        const theme = resolvedTheme();
+        if (window.Store.getTheme() !== theme) window.Store.setTheme(theme);
+        if (window.Store.getEquip().theme !== theme) window.Store.setEquip({ theme });
         const equip = window.Store.getEquip();
-        const theme = window.Store.hasUnlock('sunset-theme') && equip.theme === 'sunset'
-            ? 'sunset'
-            : (window.Store.getTheme() === 'dark' ? 'dark' : 'light');
         if (theme === 'light') document.body.removeAttribute('data-theme');
         else document.body.setAttribute('data-theme', theme);
-        window.Store.setTheme(theme);
         const useGrid = window.Store.hasUnlock('grid-paper') && equip.background === 'grid-paper';
         if (useGrid) document.body.setAttribute('data-bg', 'grid-paper');
         else document.body.removeAttribute('data-bg');
         document.body.setAttribute('data-hide-timer', String(window.Store.hideTimers()));
-        document.getElementById('theme-home').checked = theme === 'dark';
-        document.getElementById('theme-play').checked = theme === 'dark';
+        fillThemeSelect(document.getElementById('theme-home'), theme);
+        fillThemeSelect(document.getElementById('theme-play'), theme);
         document.getElementById('hide-timer').checked = window.Store.hideTimers();
+    }
+
+    function chooseTheme(value) {
+        const option = themeOptions().find((item) => item.value === value);
+        if (!option || option.locked) {
+            applyAppearance();
+            return;
+        }
+        window.Store.setTheme(option.value);
+        window.Store.setEquip({ theme: option.value });
+        applyAppearance();
     }
 
     function refreshChrome() {
@@ -49,6 +95,7 @@ window.App = (function () {
             const shouldOpen = open && card.dataset.puzzle === id;
             card.classList.toggle('flipped', shouldOpen);
         });
+        document.getElementById('card-scrim').hidden = !open;
         if (open) fillCardBack(id);
     }
 
@@ -149,40 +196,52 @@ window.App = (function () {
                             <h2 class="daily-title"></h2>
                         </div>
                         <div class="daily-row"></div>
-                        <select class="new-game-select">
-                            <option value="">New game</option>
-                        </select>
                     </div>
                 </div>
             `;
-            const select = card.querySelector('.new-game-select');
+            const back = card.querySelector('.card-back');
             if (puzzle.difficulties.length) {
+                const select = document.createElement('select');
+                select.className = 'new-game-select';
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'New game';
+                select.appendChild(placeholder);
                 puzzle.difficulties.forEach((level) => {
                     const option = document.createElement('option');
                     option.value = level;
                     option.textContent = window.PuzzleUtil.difficultyLabel(level);
                     select.appendChild(option);
                 });
+                select.addEventListener('change', () => {
+                    const value = select.value;
+                    select.value = '';
+                    if (!value) return;
+                    window.Sudoku.askConfirm('Start a new game?', 'Start').then((accepted) => {
+                        if (!accepted) return;
+                        startPuzzle(puzzle.id, 'free', value);
+                    });
+                });
+                back.appendChild(select);
             } else {
-                const option = document.createElement('option');
-                option.value = 'play';
-                option.textContent = 'New game';
-                select.appendChild(option);
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-primary new-game-btn';
+                button.textContent = 'New game';
+                button.addEventListener('click', () => {
+                    window.Sudoku.askConfirm('Start a new game?', 'Start').then((accepted) => {
+                        if (!accepted) return;
+                        startPuzzle(puzzle.id, 'free', null);
+                    });
+                });
+                back.appendChild(button);
             }
             card.querySelector('.card-front').addEventListener('click', () => flipCard(puzzle.id, true));
             card.querySelector('.btn-unflip').addEventListener('click', () => flipCard(puzzle.id, false));
-            select.addEventListener('change', () => {
-                const value = select.value;
-                select.value = '';
-                if (!value) return;
-                window.Sudoku.askConfirm('Start a new game?', 'Start').then((accepted) => {
-                    if (!accepted) return;
-                    startPuzzle(puzzle.id, 'free', value === 'play' ? null : value);
-                });
-            });
             grid.appendChild(card);
             if (openId === puzzle.id) fillCardBack(puzzle.id);
         });
+        document.getElementById('card-scrim').hidden = !openId;
     }
 
     function showHome(flipId) {
@@ -267,15 +326,12 @@ window.App = (function () {
         document.getElementById('home-settings').addEventListener('click', (event) => event.stopPropagation());
         document.getElementById('play-menu').addEventListener('click', (event) => event.stopPropagation());
         document.addEventListener('click', closePopouts);
-        document.getElementById('theme-home').addEventListener('change', () => {
-            window.Store.setTheme(document.getElementById('theme-home').checked ? 'dark' : 'light');
-            window.Store.setEquip({ theme: window.Store.getTheme() });
-            applyAppearance();
+        document.getElementById('card-scrim').addEventListener('click', () => flipCard(null, false));
+        document.getElementById('theme-home').addEventListener('change', (event) => {
+            chooseTheme(event.target.value);
         });
-        document.getElementById('theme-play').addEventListener('change', () => {
-            window.Store.setTheme(document.getElementById('theme-play').checked ? 'dark' : 'light');
-            window.Store.setEquip({ theme: window.Store.getTheme() });
-            applyAppearance();
+        document.getElementById('theme-play').addEventListener('change', (event) => {
+            chooseTheme(event.target.value);
         });
         document.getElementById('hide-timer').addEventListener('change', () => {
             window.Store.setHideTimers(document.getElementById('hide-timer').checked);
@@ -283,7 +339,10 @@ window.App = (function () {
             renderCards();
         });
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') closePopouts();
+            if (event.key === 'Escape') {
+                closePopouts();
+                if (!screens.home.hidden) flipCard(null, false);
+            }
             if (screens.play.hidden) return;
             if (currentPuzzle === 'sudoku') window.Sudoku.onKeyDown(event);
             else if (currentPuzzle === 'wordle') window.Wordle.onKeyDown(event);
@@ -309,4 +368,5 @@ window.Wordle.bind();
 window.Mines.bind();
 window.App.bind();
 window.App.applyAppearance();
-if (!window.Sudoku.restoreSession(window.Store.getSession())) window.App.showHome();
+window.Store.clearSession();
+window.App.showHome();

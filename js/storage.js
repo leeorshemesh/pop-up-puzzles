@@ -45,7 +45,7 @@ window.Store = (function () {
 
     function getTheme() {
         const value = localStorage.getItem(KEYS.THEME);
-        return value === 'dark' || value === 'sunset' ? value : 'light';
+        return typeof value === 'string' && value ? value : 'light';
     }
 
     function setTheme(theme) {
