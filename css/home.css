@@ -21,6 +21,20 @@
 
 #btn-shop { width: auto; padding: 0 10px; gap: 6px; }
 
+.avatar-btn,
+#btn-shop,
+.gear-btn,
+.menu-btn {
+    transition: transform 0.2s ease;
+}
+
+.avatar-btn:hover,
+#btn-shop:hover,
+.gear-btn:hover,
+.menu-btn:hover {
+    transform: scale(1.04);
+}
+
 .gear-icon { transition: transform 0.35s ease; transform: rotate(-18deg); }
 .gear-btn:hover .gear-icon { transform: rotate(42deg); }
 
@@ -29,6 +43,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     align-items: start;
+    padding: 6px 2px;
 }
 
 .flip-inner { position: relative; }
@@ -41,6 +56,7 @@
 }
 
 .card-front {
+    position: relative;
     width: 100%;
     min-height: 200px;
     padding: 22px;
@@ -51,10 +67,120 @@
     flex-direction: column;
     justify-content: flex-end;
     gap: 8px;
+    overflow: hidden;
+    isolation: isolate;
+    transition: transform 0.2s ease;
+    background:
+        linear-gradient(to top, var(--panel) 18%, color-mix(in srgb, var(--panel) 55%, transparent) 52%, transparent 78%),
+        var(--panel);
 }
 
-.card-title { font-size: 1.7rem; font-weight: 700; }
-.card-copy { color: var(--muted); }
+.flip-card:not(.flipped) .card-front:hover {
+    transform: scale(1.04);
+}
+
+.card-front::before {
+    content: "";
+    position: absolute;
+    inset: 12px 12px 48px;
+    z-index: -1;
+    border-radius: 10px;
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.flip-card[data-puzzle="sudoku"] .card-front::before {
+    background:
+        linear-gradient(to right, transparent 32.5%, var(--board-border) 32.5% 34%, transparent 34% 65.5%, var(--board-border) 65.5% 67%, transparent 67%),
+        linear-gradient(to bottom, transparent 32.5%, var(--board-border) 32.5% 34%, transparent 34% 65.5%, var(--board-border) 65.5% 67%, transparent 67%),
+        repeating-linear-gradient(to right, transparent 0 10.5%, color-mix(in srgb, var(--line) 80%, transparent) 10.5% 11.5%),
+        repeating-linear-gradient(to bottom, transparent 0 10.5%, color-mix(in srgb, var(--line) 80%, transparent) 10.5% 11.5%),
+        var(--cell-bg);
+}
+
+.flip-card[data-puzzle="wordle"] .card-front::before {
+    background:
+        repeating-linear-gradient(90deg, var(--exact) 0 18%, transparent 18% 20%),
+        repeating-linear-gradient(90deg, transparent 0 20%, var(--present) 20% 38%, transparent 38% 40%),
+        repeating-linear-gradient(90deg, transparent 0 40%, var(--absent) 40% 58%, transparent 58% 60%),
+        color-mix(in srgb, var(--given-bg) 70%, var(--panel));
+    background-size: 100% 22%, 100% 22%, 100% 22%, auto;
+    background-position: center 18%, center 46%, center 74%, 0 0;
+    background-repeat: no-repeat;
+}
+
+.flip-card[data-puzzle="minesweeper"] .card-front::before {
+    background-image:
+        radial-gradient(circle at 20% 30%, var(--text) 0 3px, transparent 4px),
+        radial-gradient(circle at 55% 22%, var(--text) 0 3px, transparent 4px),
+        radial-gradient(circle at 78% 48%, var(--text) 0 3px, transparent 4px),
+        radial-gradient(circle at 32% 68%, #dc2626 0 4px, transparent 5px),
+        repeating-linear-gradient(0deg, transparent 0 22px, color-mix(in srgb, var(--line) 70%, transparent) 22px 23px),
+        repeating-linear-gradient(90deg, transparent 0 22px, color-mix(in srgb, var(--line) 70%, transparent) 22px 23px),
+        var(--given-bg);
+}
+
+.flip-card[data-puzzle="2048"] .card-front::before {
+    background:
+        linear-gradient(135deg, #eee4da 0 48%, transparent 48%),
+        linear-gradient(225deg, #f2b179 0 48%, transparent 48%),
+        linear-gradient(45deg, #edc850 0 48%, transparent 48%),
+        linear-gradient(-45deg, #f65e3b 0 48%, transparent 48%),
+        var(--given-bg);
+    background-size: 46% 46%;
+    background-position: 8% 12%, 92% 12%, 8% 88%, 92% 88%;
+    background-repeat: no-repeat;
+}
+
+.flip-card[data-puzzle="hangman"] .card-front::before {
+    background:
+        linear-gradient(var(--board-border), var(--board-border)) 28% 20% / 6px 70% no-repeat,
+        linear-gradient(var(--board-border), var(--board-border)) 28% 20% / 42% 6px no-repeat,
+        radial-gradient(circle at 58% 38%, transparent 0 10px, var(--board-border) 10px 13px, transparent 14px),
+        linear-gradient(var(--board-border), var(--board-border)) 58% 48% / 4px 28% no-repeat,
+        color-mix(in srgb, var(--given-bg) 65%, var(--panel));
+}
+
+.flip-card[data-puzzle="lightsout"] .card-front::before {
+    background:
+        radial-gradient(circle at 25% 30%, var(--accent) 0 12%, transparent 13%),
+        radial-gradient(circle at 55% 30%, color-mix(in srgb, var(--given-bg) 80%, #000) 0 12%, transparent 13%),
+        radial-gradient(circle at 75% 30%, var(--accent) 0 12%, transparent 13%),
+        radial-gradient(circle at 25% 60%, color-mix(in srgb, var(--given-bg) 80%, #000) 0 12%, transparent 13%),
+        radial-gradient(circle at 55% 60%, var(--accent) 0 12%, transparent 13%),
+        radial-gradient(circle at 75% 60%, color-mix(in srgb, var(--given-bg) 80%, #000) 0 12%, transparent 13%),
+        var(--panel);
+}
+
+.flip-card[data-puzzle="solitaire"] .card-front::before {
+    background:
+        linear-gradient(145deg, #fff 0 55%, transparent 55%) 18% 30% / 28% 48% no-repeat,
+        linear-gradient(145deg, #fecaca 0 55%, transparent 55%) 42% 38% / 28% 48% no-repeat,
+        linear-gradient(145deg, var(--accent) 0 55%, transparent 55%) 66% 28% / 28% 48% no-repeat,
+        color-mix(in srgb, var(--given-bg) 70%, var(--panel));
+}
+
+.flip-card[data-puzzle="sliding"] .card-front::before {
+    background:
+        repeating-linear-gradient(0deg, transparent 0 28%, color-mix(in srgb, var(--line) 80%, transparent) 28% 30%),
+        repeating-linear-gradient(90deg, transparent 0 28%, color-mix(in srgb, var(--line) 80%, transparent) 28% 30%),
+        linear-gradient(135deg, var(--accent) 0 30%, transparent 30%) 0 0 / 30% 30% no-repeat,
+        linear-gradient(135deg, var(--highlight) 0 30%, transparent 30%) 35% 0 / 30% 30% no-repeat,
+        linear-gradient(135deg, var(--selected) 0 30%, transparent 30%) 70% 35% / 30% 30% no-repeat,
+        var(--cell-bg);
+}
+
+.flip-card[data-puzzle="memory"] .card-front::before {
+    background:
+        radial-gradient(circle at 30% 35%, var(--accent) 0 14%, transparent 15%),
+        radial-gradient(circle at 70% 35%, var(--present) 0 14%, transparent 15%),
+        radial-gradient(circle at 30% 70%, var(--exact) 0 14%, transparent 15%),
+        radial-gradient(circle at 70% 70%, color-mix(in srgb, var(--accent) 40%, var(--panel)) 0 14%, transparent 15%),
+        var(--given-bg);
+}
+
+.card-title { position: relative; font-size: 1.7rem; font-weight: 700; }
+.card-copy { position: relative; color: var(--muted); }
 
 .card-back {
     position: absolute;
@@ -101,6 +227,16 @@
 
 @media (prefers-reduced-motion: reduce) {
     .flip-card.flipped .card-back { animation: none; }
+    .card-front,
+    .avatar-btn,
+    #btn-shop,
+    .gear-btn,
+    .menu-btn { transition: none; }
+    .flip-card:not(.flipped) .card-front:hover,
+    .avatar-btn:hover,
+    #btn-shop:hover,
+    .gear-btn:hover,
+    .menu-btn:hover { transform: none; }
 }
 
 .card-back-head {
@@ -200,6 +336,30 @@
         var(--shirt);
 }
 
+.avatar[data-outfit="stripe"]::after {
+    background:
+        repeating-linear-gradient(
+            90deg,
+            var(--shirt) 0 18%,
+            color-mix(in srgb, var(--shirt) 55%, #fff) 18% 36%
+        );
+}
+
+.avatar[data-outfit="heart"]::after {
+    background:
+        radial-gradient(circle at 38% 32%, #f43f5e 0 10%, transparent 11%),
+        radial-gradient(circle at 58% 32%, #f43f5e 0 10%, transparent 11%),
+        linear-gradient(135deg, transparent 42%, #f43f5e 42% 58%, transparent 58%),
+        var(--shirt);
+}
+
+.avatar[data-outfit="cap"]::before {
+    box-shadow:
+        inset 0 -8px 0 color-mix(in srgb, var(--skin) 80%, #000),
+        0 -3px 0 4px color-mix(in srgb, var(--shirt) 75%, #1f2937),
+        6px -1px 0 1px color-mix(in srgb, var(--shirt) 75%, #1f2937);
+}
+
 .avatar-btn {
     width: 42px;
     height: 42px;
@@ -220,13 +380,136 @@
 }
 .swatch.selected { border-color: var(--accent); }
 
-.shop-list { display: grid; gap: 12px; }
-.shop-card { padding: 16px; display: grid; gap: 8px; }
-.shop-card h2 { margin: 0; font-size: 1.1rem; color: var(--text); }
-.shop-card p { margin: 0; color: var(--text); }
+.shop-filter {
+    margin: 0 0 16px;
+    max-width: 280px;
+}
+
+.shop-list { display: grid; gap: 28px; }
+
+.shop-section-title {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.shop-card {
+    position: relative;
+    min-height: 180px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    isolation: isolate;
+    transition: transform 0.2s ease;
+    background: var(--panel);
+}
+
+.shop-card:hover { transform: scale(1.04); }
+
+.shop-preview {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.shop-card-body {
+    position: relative;
+    z-index: 1;
+    padding: 14px;
+    display: grid;
+    gap: 6px;
+    background: linear-gradient(to top, var(--panel) 55%, color-mix(in srgb, var(--panel) 70%, transparent));
+}
+
+.shop-card h2 { margin: 0; font-size: 1.05rem; color: var(--text); }
+.shop-card p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+
+.shop-preview-theme[data-value="sunset"] { background: linear-gradient(145deg, #2a1620, #f59e0b); }
+.shop-preview-theme[data-value="ocean"] { background: linear-gradient(145deg, #0c2a3a, #38bdf8); }
+.shop-preview-theme[data-value="forest"] { background: linear-gradient(145deg, #13241a, #4ade80); }
+.shop-preview-theme[data-value="midnight"] { background: linear-gradient(145deg, #0a0a12, #8b5cf6); }
+
+.shop-preview-background[data-value="grid-paper"] {
+    background-color: var(--bg);
+    background-image:
+        linear-gradient(to right, color-mix(in srgb, var(--line) 70%, transparent) 1px, transparent 1px),
+        linear-gradient(to bottom, color-mix(in srgb, var(--line) 70%, transparent) 1px, transparent 1px);
+    background-size: 16px 16px;
+}
+.shop-preview-background[data-value="dots"] {
+    background-color: var(--bg);
+    background-image: radial-gradient(color-mix(in srgb, var(--line) 85%, transparent) 1.2px, transparent 1.3px);
+    background-size: 12px 12px;
+}
+.shop-preview-background[data-value="soft-waves"] {
+    background-color: var(--bg);
+    background-image: repeating-linear-gradient(-12deg, transparent, transparent 8px, color-mix(in srgb, var(--line) 55%, transparent) 8px, color-mix(in srgb, var(--line) 55%, transparent) 9px);
+}
+.shop-preview-background[data-value="corkboard"] {
+    background: linear-gradient(135deg, #c9a66b, #b8956a);
+}
+
+.shop-preview-outfit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--given-bg) 70%, var(--panel));
+}
+.shop-preview-outfit .avatar { width: 72px; height: 88px; }
+
+.shop-preview-cards {
+    background: color-mix(in srgb, var(--given-bg) 65%, var(--panel));
+}
+.shop-preview-cards::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 28%;
+    width: 42%;
+    aspect-ratio: 2.2 / 3.2;
+    transform: translateX(-50%) rotate(-8deg);
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--accent) 35%, var(--panel)), color-mix(in srgb, var(--accent) 35%, var(--panel)) 6px, color-mix(in srgb, var(--accent) 55%, var(--panel)) 6px, color-mix(in srgb, var(--accent) 55%, var(--panel)) 12px);
+}
+.shop-preview-cards[data-value="stars"]::after {
+    background:
+        radial-gradient(circle at 50% 35%, #fbbf24 0 10%, transparent 11%),
+        radial-gradient(circle at 30% 65%, #fbbf24 0 7%, transparent 8%),
+        radial-gradient(circle at 70% 65%, #fbbf24 0 7%, transparent 8%),
+        #1e3a8a;
+}
+.shop-preview-cards[data-value="geo"]::after {
+    background:
+        linear-gradient(135deg, #0f172a 25%, transparent 25%) -10px 0 / 20px 20px,
+        linear-gradient(225deg, #0f172a 25%, transparent 25%) -10px 0 / 20px 20px,
+        linear-gradient(315deg, #0f172a 25%, transparent 25%) 0 0 / 20px 20px,
+        linear-gradient(45deg, #0f172a 25%, transparent 25%) 0 0 / 20px 20px,
+        #38bdf8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-card { transition: none; }
+    .shop-card:hover { transform: none; }
+}
 
 @media (max-width: 720px) {
-    .puzzle-grid { grid-template-columns: 1fr; }
+    .puzzle-grid,
+    .shop-grid { grid-template-columns: 1fr; }
     .daily-row { flex-wrap: wrap; }
     .topbar h1, .subbar h1 { font-size: 1.25rem; }
 }

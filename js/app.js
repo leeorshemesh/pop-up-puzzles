@@ -64,9 +64,21 @@ window.App = (function () {
         const equip = window.Store.getEquip();
         if (theme === 'light') document.body.removeAttribute('data-theme');
         else document.body.setAttribute('data-theme', theme);
-        const useGrid = window.Store.hasUnlock('grid-paper') && equip.background === 'grid-paper';
-        if (useGrid) document.body.setAttribute('data-bg', 'grid-paper');
+        const bgItem = window.Shop.ITEMS.find(
+            (item) => item.kind === 'background' && item.value === equip.background
+        );
+        const useBg = bgItem && equip.background && equip.background !== 'none'
+            && window.Store.hasUnlock(bgItem.id);
+        if (useBg) document.body.setAttribute('data-bg', equip.background);
         else document.body.removeAttribute('data-bg');
+        const cards = equip.cards || 'classic';
+        const cardsItem = window.Shop.ITEMS.find(
+            (item) => item.kind === 'cards' && item.value === cards
+        );
+        const cardsOk = cards === 'classic' || (cardsItem && (
+            cardsItem.free === true || window.Store.hasUnlock(cardsItem.id)
+        ));
+        document.body.setAttribute('data-cards', cardsOk ? cards : 'classic');
         document.body.setAttribute('data-hide-timer', String(window.Store.hideTimers()));
         fillThemeSelect(document.getElementById('theme-home'), theme);
         fillThemeSelect(document.getElementById('theme-play'), theme);
@@ -169,6 +181,36 @@ window.App = (function () {
             else window.Mines.startFree(level);
             return;
         }
+        if (id === '2048') {
+            if (mode === 'daily') window.Game2048.startDaily();
+            else window.Game2048.startFree();
+            return;
+        }
+        if (id === 'hangman') {
+            if (mode === 'daily') window.Hangman.startDaily();
+            else window.Hangman.startFree();
+            return;
+        }
+        if (id === 'lightsout') {
+            if (mode === 'daily') window.LightsOut.startDaily(level);
+            else window.LightsOut.startFree(level);
+            return;
+        }
+        if (id === 'solitaire') {
+            if (mode === 'daily') window.Solitaire.startDaily();
+            else window.Solitaire.startFree();
+            return;
+        }
+        if (id === 'sliding') {
+            if (mode === 'daily') window.Sliding.startDaily(level);
+            else window.Sliding.startFree(level);
+            return;
+        }
+        if (id === 'memory') {
+            if (mode === 'daily') window.Memory.startDaily(level);
+            else window.Memory.startFree(level);
+            return;
+        }
         const label = mode === 'daily'
             ? (level ? `Daily · ${window.PuzzleUtil.difficultyLabel(level)}` : 'Daily')
             : (level ? `New game · ${window.PuzzleUtil.difficultyLabel(level)}` : 'New game');
@@ -260,6 +302,12 @@ window.App = (function () {
         if (currentPuzzle === 'sudoku') window.Sudoku.leave();
         else if (currentPuzzle === 'wordle') window.Wordle.leave();
         else if (currentPuzzle === 'minesweeper') window.Mines.leave();
+        else if (currentPuzzle === '2048') window.Game2048.leave();
+        else if (currentPuzzle === 'hangman') window.Hangman.leave();
+        else if (currentPuzzle === 'lightsout') window.LightsOut.leave();
+        else if (currentPuzzle === 'solitaire') window.Solitaire.leave();
+        else if (currentPuzzle === 'sliding') window.Sliding.leave();
+        else if (currentPuzzle === 'memory') window.Memory.leave();
         else showHome(currentPuzzle);
     }
 
@@ -269,6 +317,12 @@ window.App = (function () {
         document.getElementById('sudoku-play').hidden = puzzleId !== 'sudoku';
         document.getElementById('wordle-play').hidden = puzzleId !== 'wordle';
         document.getElementById('minesweeper-play').hidden = puzzleId !== 'minesweeper';
+        document.getElementById('game2048-play').hidden = puzzleId !== '2048';
+        document.getElementById('hangman-play').hidden = puzzleId !== 'hangman';
+        document.getElementById('lightsout-play').hidden = puzzleId !== 'lightsout';
+        document.getElementById('solitaire-play').hidden = puzzleId !== 'solitaire';
+        document.getElementById('sliding-play').hidden = puzzleId !== 'sliding';
+        document.getElementById('memory-play').hidden = puzzleId !== 'memory';
         document.getElementById('coming-soon').hidden = true;
         document.getElementById('play-menu-wrap').hidden = false;
         document.querySelectorAll('[data-sudoku-only]').forEach((node) => {
@@ -346,6 +400,8 @@ window.App = (function () {
             if (screens.play.hidden) return;
             if (currentPuzzle === 'sudoku') window.Sudoku.onKeyDown(event);
             else if (currentPuzzle === 'wordle') window.Wordle.onKeyDown(event);
+            else if (currentPuzzle === '2048') window.Game2048.onKeyDown(event);
+            else if (currentPuzzle === 'hangman') window.Hangman.onKeyDown(event);
         });
     }
 
@@ -363,9 +419,16 @@ window.App = (function () {
 })();
 
 window.Profile.bind();
+window.Shop.bind();
 window.Sudoku.bind();
 window.Wordle.bind();
 window.Mines.bind();
+window.Game2048.bind();
+window.Hangman.bind();
+window.LightsOut.bind();
+window.Solitaire.bind();
+window.Sliding.bind();
+window.Memory.bind();
 window.App.bind();
 window.App.applyAppearance();
 window.Store.clearSession();

@@ -101,6 +101,7 @@ window.Store = (function () {
             theme: getTheme(),
             background: 'none',
             outfit: getProfile().outfit,
+            cards: 'classic',
             ...readJson(KEYS.EQUIP, {})
         };
     }

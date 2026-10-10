@@ -19,6 +19,48 @@ window.Puzzles = [
         description: 'Clear the board without hitting a mine.',
         difficulties: ['easy', 'medium', 'hard'],
         trophies: { easy: 1, medium: 2, hard: 3 }
+    },
+    {
+        id: '2048',
+        name: '2048',
+        description: 'Slide and merge tiles for a high score.',
+        difficulties: [],
+        trophies: { t512: 1, t1024: 2, t2048: 3, t4096: 4 }
+    },
+    {
+        id: 'hangman',
+        name: 'Hangman',
+        description: 'Guess the hidden phrase one letter at a time.',
+        difficulties: [],
+        trophies: { default: 2 }
+    },
+    {
+        id: 'lightsout',
+        name: 'Lights Out',
+        description: 'Toggle cells until every light is off.',
+        difficulties: ['easy', 'medium', 'hard'],
+        trophies: { easy: 1, medium: 2, hard: 3 }
+    },
+    {
+        id: 'solitaire',
+        name: 'Solitaire',
+        description: 'Clear the Klondike layout by building foundations.',
+        difficulties: [],
+        trophies: { default: 3 }
+    },
+    {
+        id: 'sliding',
+        name: 'Sliding Puzzle',
+        description: 'Slide numbered tiles back into order.',
+        difficulties: ['easy', 'medium', 'hard'],
+        trophies: { easy: 1, medium: 2, hard: 3 }
+    },
+    {
+        id: 'memory',
+        name: 'Memory Match',
+        description: 'Flip cards to find matching pairs.',
+        difficulties: ['easy', 'medium', 'hard'],
+        trophies: { easy: 1, medium: 2, hard: 3 }
     }
 ];
 
