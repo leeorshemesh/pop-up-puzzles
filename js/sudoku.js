@@ -10,8 +10,6 @@ window.Sudoku = (function () {
     const notesButton = document.getElementById('btn-notes');
     const boardEl = document.getElementById('sudoku-board');
     const victoryModal = document.getElementById('victory-modal');
-    const confirmModal = document.getElementById('confirm-modal');
-    const confirmMessage = document.getElementById('confirm-message');
 
     let solution = null;
     let givens = null;
@@ -28,7 +26,6 @@ window.Sudoku = (function () {
     let gameCompleted = false;
     let puzzleReady = false;
     let hintTimer = null;
-    let confirmResolver = null;
     let generationToken = 0;
     let lastAward = 0;
     let revealing = false;
@@ -781,22 +778,6 @@ window.Sudoku = (function () {
         persistProgress();
     }
 
-    function askConfirm(message, okLabel) {
-        window.App.closePopouts();
-        confirmMessage.textContent = message;
-        const okButton = document.getElementById('btn-confirm-ok');
-        okButton.textContent = okLabel || 'OK';
-        confirmModal.hidden = false;
-        return new Promise((resolve) => {
-            confirmResolver = (accepted) => {
-                confirmModal.hidden = true;
-                confirmResolver = null;
-                okButton.textContent = 'Restart';
-                resolve(!!accepted);
-            };
-        });
-    }
-
     function restartPuzzle() {
         if (!puzzleReady || !givens) return;
         window.App.closePopouts();
@@ -804,7 +785,10 @@ window.Sudoku = (function () {
             applyRestart();
             return;
         }
-        askConfirm("Restart today's puzzle? Your saved time and progress will be cleared.", 'Restart').then((accepted) => {
+        window.App.askConfirm(
+            "Restart today's puzzle? Your saved time and progress will be cleared.",
+            'Restart'
+        ).then((accepted) => {
             if (accepted) applyRestart();
         });
     }
@@ -885,12 +869,6 @@ window.Sudoku = (function () {
                 else placeNumber(Number(key.dataset.value));
             });
         });
-        document.getElementById('btn-confirm-ok').addEventListener('click', () => {
-            if (confirmResolver) confirmResolver(true);
-        });
-        document.getElementById('btn-confirm-cancel').addEventListener('click', () => {
-            if (confirmResolver) confirmResolver(false);
-        });
         const saveForHide = () => {
             if (revealing) commitReveal();
             persistProgress();
@@ -907,7 +885,6 @@ window.Sudoku = (function () {
         startDaily,
         startFree,
         restoreSession,
-        askConfirm,
         leave,
         onKeyDown,
         save: persistProgress

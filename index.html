@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pop Up Puzzles</title>
-    <link rel="stylesheet" href="css/base.css?v=8">
-    <link rel="stylesheet" href="css/home.css?v=8">
+    <link rel="stylesheet" href="css/base.css?v=13">
+    <link rel="stylesheet" href="css/home.css?v=13">
     <link rel="stylesheet" href="css/play.css?v=8">
 </head>
 <body>
@@ -17,6 +17,13 @@
                 </button>
                 <h1>Pop Up Puzzles</h1>
                 <div class="top-actions">
+                    <button type="button" id="btn-inventory" class="icon-btn" aria-label="Open inventory">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 7.5h16v12.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20V7.5z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+                            <path d="M8 7.5V6a4 4 0 0 1 8 0v1.5" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+                            <path d="M4 11h16" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+                        </svg>
+                    </button>
                     <button type="button" id="btn-shop" class="icon-btn" aria-label="Open shop">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M6 8h12l-1 12H7L6 8z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
@@ -49,11 +56,36 @@
 
         <section id="screen-profile" hidden>
             <header class="subbar">
-                <button type="button" class="text-btn" data-back-home>Back</button>
+                <button type="button" class="icon-btn back-btn" data-back-home aria-label="Back">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
                 <h1>Profile</h1>
             </header>
-            <div class="panel">
+            <div class="panel profile-panel">
                 <div class="avatar avatar-lg" data-avatar></div>
+                <p class="profile-name" id="profile-name-display">Player</p>
+                <p class="profile-trophies"><span id="profile-trophies" class="trophy-chip">0</span></p>
+                <div class="stats-accordion">
+                    <h2 class="profile-stats-heading">Stats</h2>
+                    <ul class="stats" id="profile-stats"></ul>
+                </div>
+                <button type="button" id="btn-edit-profile" class="btn btn-primary profile-edit-btn">Edit Profile</button>
+            </div>
+        </section>
+
+        <section id="screen-edit-profile" hidden>
+            <header class="subbar">
+                <button type="button" class="icon-btn back-btn" id="btn-edit-profile-back" aria-label="Back">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
+                <h1>Edit Profile</h1>
+            </header>
+            <div class="panel profile-panel">
+                <div class="avatar avatar-lg" data-edit-avatar></div>
                 <label class="field">
                     <span>Name</span>
                     <input type="text" id="profile-name" maxlength="24" autocomplete="nickname">
@@ -66,8 +98,15 @@
                     <p>Shirt</p>
                     <div class="swatches" id="shirt-swatches"></div>
                 </div>
-                <p class="stat-line">Trophies: <strong id="profile-trophies">0</strong></p>
-                <ul class="stats" id="profile-stats"></ul>
+                <div class="swatch-block">
+                    <p>Face</p>
+                    <div class="face-picker" id="face-picker"></div>
+                </div>
+                <div class="swatch-block">
+                    <p>Outfit</p>
+                    <div class="outfit-picker" id="outfit-picker"></div>
+                </div>
+                <button type="button" id="btn-save-profile" class="btn profile-save-btn" disabled>Save changes to profile</button>
             </div>
         </section>
 
@@ -75,13 +114,25 @@
             <header class="subbar">
                 <button type="button" class="text-btn" data-back-home>Back</button>
                 <h1>Shop</h1>
-                <span id="shop-trophies" class="trophy-chip">0</span>
+                <span id="shop-trophies" class="trophy-chip shop-trophy-chip">0</span>
             </header>
             <label class="shop-filter switch-row">
                 <span>Inventory only</span>
-                <input type="checkbox" id="shop-inventory-only">
+                <span class="toggle-switch">
+                    <input type="checkbox" id="shop-inventory-only">
+                    <span class="toggle-track" aria-hidden="true"></span>
+                </span>
             </label>
             <div class="shop-list" id="shop-list"></div>
+            <div id="shop-scrim" class="card-scrim" hidden></div>
+        </section>
+
+        <section id="screen-inventory" hidden>
+            <header class="subbar">
+                <button type="button" class="text-btn" data-back-home>Back</button>
+                <h1>Inventory</h1>
+            </header>
+            <div class="shop-list" id="inventory-list"></div>
         </section>
 
         <section id="screen-play" hidden>
@@ -344,16 +395,17 @@
             <p id="confirm-message"></p>
             <div class="modal-actions">
                 <button type="button" id="btn-confirm-cancel" class="btn">Cancel</button>
-                <button type="button" id="btn-confirm-ok" class="btn btn-primary">Restart</button>
+                <button type="button" id="btn-confirm-ok" class="btn btn-primary">Confirm</button>
             </div>
         </div>
     </div>
 
-    <script src="js/storage.js?v=7"></script>
+    <script src="js/storage.js?v=8"></script>
     <script src="js/puzzles.js?v=8"></script>
-    <script src="js/profile.js?v=5"></script>
-    <script src="js/shop.js?v=9"></script>
-    <script src="js/sudoku.js?v=5"></script>
+    <script src="js/profile.js?v=10"></script>
+    <script src="js/shop.js?v=14"></script>
+    <script src="js/inventory.js?v=1"></script>
+    <script src="js/sudoku.js?v=6"></script>
     <script src="js/words.js?v=5"></script>
     <script src="js/phrases.js?v=1"></script>
     <script src="js/wordle.js?v=5"></script>
@@ -365,6 +417,6 @@
     <script src="js/sliding.js?v=1"></script>
     <script src="js/memory.js?v=1"></script>
     <script src="js/placeholders.js?v=5"></script>
-    <script src="js/app.js?v=10"></script>
+    <script src="js/app.js?v=13"></script>
 </body>
 </html>

@@ -6,6 +6,16 @@
     margin-bottom: 24px;
 }
 
+.subbar > .text-btn,
+.subbar > .back-btn {
+    justify-self: start;
+}
+
+.subbar > .trophy-chip,
+.subbar > .shop-trophy-chip {
+    justify-self: end;
+}
+
 .topbar h1, .subbar h1 {
     margin: 0;
     text-align: center;
@@ -23,6 +33,7 @@
 
 .avatar-btn,
 #btn-shop,
+#btn-inventory,
 .gear-btn,
 .menu-btn {
     transition: transform 0.2s ease;
@@ -30,9 +41,15 @@
 
 .avatar-btn:hover,
 #btn-shop:hover,
+#btn-inventory:hover,
 .gear-btn:hover,
 .menu-btn:hover {
     transform: scale(1.04);
+}
+
+.shop-trophy-chip {
+    font-size: 1.15rem;
+    gap: 6px;
 }
 
 .gear-icon { transition: transform 0.35s ease; transform: rotate(-18deg); }
@@ -230,11 +247,13 @@
     .card-front,
     .avatar-btn,
     #btn-shop,
+    #btn-inventory,
     .gear-btn,
     .menu-btn { transition: none; }
     .flip-card:not(.flipped) .card-front:hover,
     .avatar-btn:hover,
     #btn-shop:hover,
+    #btn-inventory:hover,
     .gear-btn:hover,
     .menu-btn:hover { transform: none; }
 }
@@ -294,6 +313,10 @@
     font-size: 0.85rem;
 }
 
+.stat-row .best-line {
+    margin: 4px 0 0;
+}
+
 .avatar {
     --skin: #f3c6a5;
     --shirt: #3b82f6;
@@ -305,6 +328,10 @@
 
 .avatar-sm { width: 36px; height: 36px; }
 .avatar-lg { width: 120px; height: 140px; margin: 0 auto 8px; }
+.avatar-face-preview {
+    width: 48px;
+    height: 48px;
+}
 
 .avatar::before, .avatar::after {
     content: "";
@@ -328,6 +355,114 @@
     top: 46%;
     border-radius: 18px 18px 22px 22px;
     background: var(--shirt);
+}
+
+.avatar-face-preview::after { display: none; }
+.avatar-face-preview::before {
+    width: 70%;
+    height: 70%;
+    top: 15%;
+}
+
+.avatar-face {
+    position: absolute;
+    left: 50%;
+    top: 8%;
+    width: 46%;
+    height: 38%;
+    transform: translateX(-50%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.avatar-face-preview .avatar-face {
+    width: 70%;
+    height: 70%;
+    top: 15%;
+}
+
+.avatar-eyes,
+.avatar-brows,
+.avatar-mouth {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Fixed eye grid — same for every face */
+.avatar-eyes {
+    top: 30%;
+    height: 28%;
+    background:
+        radial-gradient(circle at 32% 50%, #1f2937 0 18%, transparent 19%),
+        radial-gradient(circle at 68% 50%, #1f2937 0 18%, transparent 19%);
+}
+
+/* Brows — only drawn when a face needs them */
+.avatar-brows {
+    top: 12%;
+    height: 24%;
+}
+
+.avatar[data-face="mad"] .avatar-brows::before,
+.avatar[data-face="mad"] .avatar-brows::after {
+    content: "";
+    position: absolute;
+    top: 45%;
+    width: 26%;
+    height: 2.5px;
+    background: #1f2937;
+    border-radius: 2px;
+}
+
+.avatar[data-face="mad"] .avatar-brows::before {
+    left: 14%;
+    transform: rotate(28deg);
+}
+
+.avatar[data-face="mad"] .avatar-brows::after {
+    right: 14%;
+    transform: rotate(-28deg);
+}
+
+/* Mouth variants — swap this slot only */
+.avatar-mouth {
+    top: 62%;
+    left: 50%;
+    width: 34%;
+    height: 20%;
+    transform: translateX(-50%);
+    border: 2px solid #1f2937;
+    border-top: none;
+    border-radius: 0 0 50% 50% / 0 0 100% 100%;
+    background: transparent;
+}
+
+.avatar[data-face="sad"] .avatar-mouth {
+    top: 66%;
+    border: 2px solid #1f2937;
+    border-bottom: none;
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
+
+.avatar[data-face="mad"] .avatar-mouth {
+    width: 28%;
+    height: 3px;
+    top: 70%;
+    border: none;
+    border-radius: 2px;
+    background: #1f2937;
+}
+
+.avatar[data-face="grin"] .avatar-mouth {
+    width: 42%;
+    height: 24%;
+    top: 58%;
+    border: 2px solid #1f2937;
+    border-top: none;
+    border-radius: 0 0 50% 50% / 0 0 100% 100%;
+    background: #fff;
 }
 
 .avatar[data-outfit="star"]::after {
@@ -381,8 +516,14 @@
 .swatch.selected { border-color: var(--accent); }
 
 .shop-filter {
-    margin: 0 0 16px;
-    max-width: 280px;
+    margin: 0 0 18px;
+    max-width: 260px;
+    margin-left: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    padding: 8px 12px;
 }
 
 .shop-list { display: grid; gap: 28px; }
@@ -402,41 +543,98 @@
 
 .shop-card {
     position: relative;
-    min-height: 180px;
+    min-height: 220px;
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    box-shadow: none;
+    overflow: visible;
+    background: transparent;
+}
+
+.shop-card.flipped {
+    z-index: 32;
+}
+
+.shop-card .flip-inner {
+    min-height: 220px;
+}
+
+.shop-card-front {
+    position: relative;
+    width: 100%;
+    min-height: 220px;
     padding: 0;
     border: 1px solid var(--line);
     border-radius: 16px;
     box-shadow: var(--shadow);
     overflow: hidden;
+    background: var(--panel);
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    isolation: isolate;
     transition: transform 0.2s ease;
-    background: var(--panel);
+    isolation: isolate;
 }
 
-.shop-card:hover { transform: scale(1.04); }
+.shop-card:not(.flipped) .shop-card-front:hover,
+.inventory-card .shop-card-front:hover {
+    transform: scale(1.04);
+}
+
+.inventory-card {
+    min-height: 220px;
+}
+
+.inventory-card .shop-card-front {
+    height: 100%;
+}
 
 .shop-preview {
-    position: absolute;
-    inset: 0;
+    position: relative;
+    flex: 1;
+    min-height: 120px;
     z-index: 0;
-    opacity: 0.85;
     pointer-events: none;
+}
+
+.shop-card-back .shop-preview {
+    min-height: 160px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    margin-bottom: 12px;
+}
+
+.shop-card-back .shop-preview-detailed.shop-preview-cards,
+.shop-card-back .shop-preview-detailed.shop-preview-outfit {
+    min-height: 220px;
+    overflow: visible;
 }
 
 .shop-card-body {
     position: relative;
     z-index: 1;
-    padding: 14px;
+    padding: 12px 14px 14px;
     display: grid;
-    gap: 6px;
-    background: linear-gradient(to top, var(--panel) 55%, color-mix(in srgb, var(--panel) 70%, transparent));
+    gap: 8px;
+    background: var(--panel);
 }
 
 .shop-card h2 { margin: 0; font-size: 1.05rem; color: var(--text); }
-.shop-card p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+.shop-card p,
+.shop-cost { margin: 0; color: var(--muted); font-size: 0.88rem; }
+
+.shop-card-back {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+}
+
+.shop-card-back .shop-desc {
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
 
 .shop-preview-theme[data-value="sunset"] { background: linear-gradient(145deg, #2a1620, #f59e0b); }
 .shop-preview-theme[data-value="ocean"] { background: linear-gradient(145deg, #0c2a3a, #38bdf8); }
@@ -462,6 +660,16 @@
 .shop-preview-background[data-value="corkboard"] {
     background: linear-gradient(135deg, #c9a66b, #b8956a);
 }
+.shop-preview-background[data-value="none"] {
+    background: var(--bg);
+}
+
+.shop-preview-theme[data-value="light"] {
+    background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+}
+.shop-preview-theme[data-value="dark"] {
+    background: linear-gradient(145deg, #0f172a, #334155);
+}
 
 .shop-preview-outfit {
     display: flex;
@@ -470,41 +678,95 @@
     background: color-mix(in srgb, var(--given-bg) 70%, var(--panel));
 }
 .shop-preview-outfit .avatar { width: 72px; height: 88px; }
+.shop-preview-outfit.shop-preview-detailed .avatar {
+    width: 110px;
+    height: 132px;
+    margin: 0;
+}
 
 .shop-preview-cards {
+    position: relative;
     background: color-mix(in srgb, var(--given-bg) 65%, var(--panel));
 }
-.shop-preview-cards::after {
-    content: "";
+
+.shop-card-hand {
     position: absolute;
-    left: 50%;
-    top: 28%;
-    width: 42%;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.shop-card-face {
+    display: block;
+    width: min(46%, 96px);
     aspect-ratio: 2.2 / 3.2;
-    transform: translateX(-50%) rotate(-8deg);
     border-radius: 8px;
     border: 1px solid var(--line);
-    background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--accent) 35%, var(--panel)), color-mix(in srgb, var(--accent) 35%, var(--panel)) 6px, color-mix(in srgb, var(--accent) 55%, var(--panel)) 6px, color-mix(in srgb, var(--accent) 55%, var(--panel)) 12px);
+    box-shadow: var(--shadow);
+    background: repeating-linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--accent) 35%, var(--panel)),
+        color-mix(in srgb, var(--accent) 35%, var(--panel)) 6px,
+        color-mix(in srgb, var(--accent) 55%, var(--panel)) 6px,
+        color-mix(in srgb, var(--accent) 55%, var(--panel)) 12px
+    );
 }
-.shop-preview-cards[data-value="stars"]::after {
+
+.shop-preview-cards[data-value="stars"] .shop-card-face {
     background:
-        radial-gradient(circle at 50% 35%, #fbbf24 0 10%, transparent 11%),
-        radial-gradient(circle at 30% 65%, #fbbf24 0 7%, transparent 8%),
-        radial-gradient(circle at 70% 65%, #fbbf24 0 7%, transparent 8%),
+        radial-gradient(circle at 50% 32%, #fbbf24 0 12%, transparent 13%),
+        radial-gradient(circle at 28% 68%, #fbbf24 0 8%, transparent 9%),
+        radial-gradient(circle at 72% 68%, #fbbf24 0 8%, transparent 9%),
         #1e3a8a;
 }
-.shop-preview-cards[data-value="geo"]::after {
+
+.shop-preview-cards[data-value="geo"] .shop-card-face {
     background:
-        linear-gradient(135deg, #0f172a 25%, transparent 25%) -10px 0 / 20px 20px,
-        linear-gradient(225deg, #0f172a 25%, transparent 25%) -10px 0 / 20px 20px,
-        linear-gradient(315deg, #0f172a 25%, transparent 25%) 0 0 / 20px 20px,
-        linear-gradient(45deg, #0f172a 25%, transparent 25%) 0 0 / 20px 20px,
+        linear-gradient(135deg, #0f172a 25%, transparent 25%) -8px 0 / 16px 16px,
+        linear-gradient(225deg, #0f172a 25%, transparent 25%) -8px 0 / 16px 16px,
+        linear-gradient(315deg, #0f172a 25%, transparent 25%) 0 0 / 16px 16px,
+        linear-gradient(45deg, #0f172a 25%, transparent 25%) 0 0 / 16px 16px,
         #38bdf8;
 }
 
+.shop-card-hand:not(.shop-card-hand-fan) .shop-card-face {
+    transform: rotate(-8deg);
+}
+
+.shop-card-hand-fan {
+    position: relative;
+    inset: auto;
+    min-height: 200px;
+    height: 100%;
+}
+
+.shop-card-hand-fan .shop-card-face {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(30%, 112px);
+}
+
+.shop-card-hand-fan .shop-card-face:nth-child(1) {
+    transform: translate(-118%, -48%) rotate(-18deg);
+    z-index: 1;
+}
+
+.shop-card-hand-fan .shop-card-face:nth-child(2) {
+    transform: translate(-50%, -54%) rotate(0deg);
+    z-index: 3;
+}
+
+.shop-card-hand-fan .shop-card-face:nth-child(3) {
+    transform: translate(18%, -48%) rotate(18deg);
+    z-index: 2;
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .shop-card { transition: none; }
-    .shop-card:hover { transform: none; }
+    .shop-card-front { transition: none; }
+    .shop-card:not(.flipped) .shop-card-front:hover,
+    .inventory-card .shop-card-front:hover { transform: none; }
 }
 
 @media (max-width: 720px) {

@@ -2,11 +2,14 @@ window.App = (function () {
     const screens = {
         home: document.getElementById('screen-home'),
         profile: document.getElementById('screen-profile'),
+        'edit-profile': document.getElementById('screen-edit-profile'),
         shop: document.getElementById('screen-shop'),
+        inventory: document.getElementById('screen-inventory'),
         play: document.getElementById('screen-play')
     };
 
     let currentPuzzle = null;
+    let confirmResolver = null;
 
     function showScreen(name) {
         Object.entries(screens).forEach(([key, node]) => {
@@ -259,7 +262,7 @@ window.App = (function () {
                     const value = select.value;
                     select.value = '';
                     if (!value) return;
-                    window.Sudoku.askConfirm('Start a new game?', 'Start').then((accepted) => {
+                    askConfirm('Start a new game?', 'Start').then((accepted) => {
                         if (!accepted) return;
                         startPuzzle(puzzle.id, 'free', value);
                     });
@@ -271,7 +274,7 @@ window.App = (function () {
                 button.className = 'btn btn-primary new-game-btn';
                 button.textContent = 'New game';
                 button.addEventListener('click', () => {
-                    window.Sudoku.askConfirm('Start a new game?', 'Start').then((accepted) => {
+                    askConfirm('Start a new game?', 'Start').then((accepted) => {
                         if (!accepted) return;
                         startPuzzle(puzzle.id, 'free', null);
                     });
@@ -286,8 +289,26 @@ window.App = (function () {
         document.getElementById('card-scrim').hidden = !openId;
     }
 
+    function askConfirm(message, okLabel) {
+        closePopouts();
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmMessage = document.getElementById('confirm-message');
+        const okButton = document.getElementById('btn-confirm-ok');
+        confirmMessage.textContent = message;
+        okButton.textContent = okLabel || 'Confirm';
+        confirmModal.hidden = false;
+        return new Promise((resolve) => {
+            confirmResolver = (accepted) => {
+                confirmModal.hidden = true;
+                confirmResolver = null;
+                resolve(!!accepted);
+            };
+        });
+    }
+
     function showHome(flipId) {
         currentPuzzle = null;
+        if (window.Shop && window.Shop.closeFlip) window.Shop.closeFlip();
         showScreen('home');
         refreshChrome();
         if (flipId) flipCard(flipId, true);
@@ -355,12 +376,26 @@ window.App = (function () {
             showScreen('profile');
             window.Profile.refresh();
         });
+        document.getElementById('btn-edit-profile').addEventListener('click', () => {
+            showScreen('edit-profile');
+            window.Profile.refreshEdit();
+        });
         document.getElementById('btn-shop').addEventListener('click', () => {
             showScreen('shop');
             window.Shop.refresh();
         });
+        document.getElementById('btn-inventory').addEventListener('click', () => {
+            showScreen('inventory');
+            window.Inventory.refresh();
+        });
         document.querySelectorAll('[data-back-home]').forEach((button) => {
             button.addEventListener('click', () => showHome());
+        });
+        document.getElementById('btn-confirm-ok').addEventListener('click', () => {
+            if (confirmResolver) confirmResolver(true);
+        });
+        document.getElementById('btn-confirm-cancel').addEventListener('click', () => {
+            if (confirmResolver) confirmResolver(false);
         });
         document.getElementById('btn-play-back').addEventListener('click', leavePlay);
         document.getElementById('btn-play-again').addEventListener('click', () => {
@@ -396,6 +431,8 @@ window.App = (function () {
             if (event.key === 'Escape') {
                 closePopouts();
                 if (!screens.home.hidden) flipCard(null, false);
+                if (!screens.shop.hidden && window.Shop) window.Shop.closeFlip();
+                if (confirmResolver) confirmResolver(false);
             }
             if (screens.play.hidden) return;
             if (currentPuzzle === 'sudoku') window.Sudoku.onKeyDown(event);
@@ -409,6 +446,8 @@ window.App = (function () {
         applyAppearance,
         refreshChrome,
         closePopouts,
+        askConfirm,
+        showScreen,
         showHome,
         showPlay,
         preparePlay,
@@ -420,6 +459,7 @@ window.App = (function () {
 
 window.Profile.bind();
 window.Shop.bind();
+window.Inventory.bind();
 window.Sudoku.bind();
 window.Wordle.bind();
 window.Mines.bind();

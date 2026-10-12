@@ -16,7 +16,8 @@ window.Store = (function () {
         name: 'Player',
         skin: '#f3c6a5',
         shirt: '#3b82f6',
-        outfit: 'default'
+        outfit: 'default',
+        face: 'happy'
     };
 
     function readJson(key, fallback) {
