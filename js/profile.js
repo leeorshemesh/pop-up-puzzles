@@ -213,16 +213,20 @@ window.Profile = (function () {
             body.appendChild(counts);
 
             const bests = window.Store.getBests(puzzle.id);
-            const levels = puzzle.difficulties.length ? puzzle.difficulties : [];
+            const levels = puzzle.difficulties.length ? puzzle.difficulties : ['default'];
             const hasBest = levels.some((level) => bests[level] != null);
             if (hasBest && !window.Store.hideTimers()) {
                 const best = document.createElement('div');
                 best.className = 'best-line';
-                best.textContent = levels.map((level) => {
-                    const time = bests[level];
-                    const label = window.PuzzleUtil.difficultyLabel(level);
-                    return `${label} ${time == null ? '—' : window.PuzzleUtil.formatTime(time)}`;
-                }).join(' · ');
+                if (puzzle.difficulties.length) {
+                    best.textContent = levels.map((level) => {
+                        const time = bests[level];
+                        const label = window.PuzzleUtil.difficultyLabel(level);
+                        return `${label} ${time == null ? '—' : window.PuzzleUtil.formatTime(time)}`;
+                    }).join(' · ');
+                } else {
+                    best.textContent = window.PuzzleUtil.formatTime(bests.default);
+                }
                 body.appendChild(best);
             }
 

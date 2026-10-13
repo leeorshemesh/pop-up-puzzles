@@ -34,9 +34,27 @@
     let pressTimer = null;
     let suppressClick = false;
     let flagStamp = 0;
+    let hintTimer = null;
+    let hintCell = null;
 
     function setStatus(text) {
         statusEl.textContent = text;
+    }
+
+    function syncHintButton() {
+        const button = document.getElementById('btn-hint');
+        if (!document.getElementById('minesweeper-play').hidden) {
+            button.disabled = won || lost || paused;
+        }
+    }
+
+    function cellSizePx() {
+        const frame = boardEl.closest('.mine-frame') || boardEl.parentElement;
+        const available = Math.max(180, (frame ? frame.clientWidth : 460) - 4);
+        const maxByWidth = Math.floor(available / cols);
+        const maxByDiff = level === 'easy' ? 52 : (level === 'medium' ? 30 : 24);
+        const minSize = level === 'hard' ? 18 : 22;
+        return Math.max(minSize, Math.min(maxByDiff, maxByWidth));
     }
 
     function blank(fill) {
@@ -116,12 +134,22 @@
 
     function startTimer() {
         stopTimer();
-        if (paused || won || lost || !started) return;
+        if (paused || won || lost) return;
         timerId = setInterval(() => {
             secondsElapsed += 1;
             updateHeader();
             saveDaily();
         }, 1000);
+    }
+
+    function setPaused(next) {
+        if (won || lost) return;
+        paused = !!next;
+        if (paused) stopTimer();
+        else startTimer();
+        updateHeader();
+        syncHintButton();
+        saveDaily();
     }
 
     function saveDaily() {
@@ -140,8 +168,11 @@
     }
 
     function render() {
-        boardEl.style.gridTemplateColumns = `repeat(${cols}, 28px)`;
-        boardEl.style.gridTemplateRows = `repeat(${rows}, 28px)`;
+        const size = cellSizePx();
+        boardEl.style.setProperty('--mine-cell', `${size}px`);
+        boardEl.style.setProperty('--mine-font', `${Math.max(0.7, size / 28)}rem`);
+        boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--mine-cell))`;
+        boardEl.style.gridTemplateRows = `repeat(${rows}, var(--mine-cell))`;
         boardEl.innerHTML = '';
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
@@ -185,11 +216,47 @@
                         cell.setAttribute('aria-label', 'Empty');
                     }
                 }
+                if (hintCell && hintCell.row === r && hintCell.col === c) {
+                    cell.classList.add('hint');
+                }
                 bindCell(cell, r, c);
                 boardEl.appendChild(cell);
             }
         }
         updateHeader();
+        syncHintButton();
+    }
+
+    function giveHint() {
+        if (won || lost || paused) return;
+        window.App.closePopouts();
+        if (!started) {
+            setStatus('Open a few squares first.');
+            return;
+        }
+        const candidates = [];
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (!mines[r][c] || flags[r][c] || revealed[r][c]) continue;
+                const bordersExplored = neighbors(r, c).some((cell) => revealed[cell.r][cell.c] && !mines[cell.r][cell.c]);
+                if (bordersExplored) candidates.push({ row: r, col: c });
+            }
+        }
+        if (!candidates.length) {
+            setStatus('No border mines to flag yet.');
+            return;
+        }
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        flags[pick.row][pick.col] = true;
+        hintCell = pick;
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => {
+            hintCell = null;
+            render();
+        }, 2000);
+        setStatus('Hint: flagged a border mine.');
+        render();
+        saveDaily();
     }
 
     function bindCell(cell, row, col) {
@@ -260,17 +327,19 @@
         saveDaily();
         render();
         let trophy = '';
-        if (didWin && gameMode === 'daily') {
-            const award = window.Store.awardIfNeeded(
-                PUZZLE_ID,
-                playDate,
-                level,
-                window.PuzzleUtil.trophyFor(PUZZLE_ID, level)
-            );
+        if (didWin) {
             window.Store.recordBest(PUZZLE_ID, level, secondsElapsed);
-            trophy = award
-                ? `+${award} ${award === 1 ? 'trophy' : 'trophies'}`
-                : 'Trophies already claimed for this daily.';
+            if (gameMode === 'daily') {
+                const award = window.Store.awardIfNeeded(
+                    PUZZLE_ID,
+                    playDate,
+                    level,
+                    window.PuzzleUtil.trophyFor(PUZZLE_ID, level)
+                );
+                trophy = award
+                    ? `+${award} ${award === 1 ? 'trophy' : 'trophies'}`
+                    : 'Trophies already claimed for this daily.';
+            }
         }
         setStatus(didWin
             ? (window.Store.hideTimers() ? 'Solved.' : `Solved in ${window.PuzzleUtil.formatTime(secondsElapsed)}.`)
@@ -378,7 +447,7 @@
             return;
         }
         setStatus('');
-        if (started && !paused) startTimer();
+        if (!paused) startTimer();
         else stopTimer();
     }
 
@@ -442,13 +511,12 @@
         bind() {
             pauseButton.addEventListener('click', () => {
                 if (won || lost) return;
-                paused = !paused;
-                if (paused) stopTimer();
-                else if (started) startTimer();
-                updateHeader();
-                saveDaily();
+                setPaused(!paused);
             });
             boardEl.addEventListener('contextmenu', (event) => event.preventDefault());
+            window.addEventListener('resize', () => {
+                if (!document.getElementById('minesweeper-play').hidden) render();
+            });
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) saveDaily();
             });
@@ -474,6 +542,9 @@
             paused = false;
             window.App.showHome(PUZZLE_ID);
         },
+        giveHint,
+        setPaused,
+        isPaused: () => paused,
         onKeyDown() {}
     };
 })();

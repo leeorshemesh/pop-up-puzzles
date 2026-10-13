@@ -1,6 +1,6 @@
 (function () {
     const PUZZLE_ID = 'hangman';
-    const MAX_MISSES = 8;
+    const MAX_MISSES = 7;
     const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
     const statusEl = document.getElementById('hang-status');
@@ -39,15 +39,34 @@
         return guessed.filter((letter) => !needed.has(letter)).length;
     }
 
-    function masked() {
-        return [...answer].map((ch) => {
-            if (ch === ' ') return ' ';
-            return guessed.includes(ch) ? ch : '_';
-        }).join('').replace(/ /g, '   ');
+    function wrongGuessesLeft() {
+        return Math.max(0, MAX_MISSES - misses());
     }
 
-    function revealAnswer() {
-        return answer.replace(/ /g, '   ');
+    function syncHintButton() {
+        const button = document.getElementById('btn-hint');
+        if (!document.getElementById('hangman-play').hidden) {
+            button.disabled = finished || paused;
+        }
+    }
+
+    function renderWord() {
+        wordEl.innerHTML = '';
+        const showAnswer = finished && !won;
+        const words = answer.split(' ');
+        words.forEach((word) => {
+            const group = document.createElement('span');
+            group.className = 'hang-word-group';
+            [...word].forEach((ch) => {
+                const slot = document.createElement('span');
+                slot.className = 'hang-letter';
+                const known = showAnswer || guessed.includes(ch);
+                slot.textContent = known ? ch.toUpperCase() : '_';
+                if (known) slot.classList.add('revealed');
+                group.appendChild(slot);
+            });
+            wordEl.appendChild(group);
+        });
     }
 
     function isWon() {
@@ -73,9 +92,18 @@
         }, 1000);
     }
 
+    function setPaused(next) {
+        if (finished) return;
+        paused = !!next;
+        if (paused) stopTimer();
+        else if (started) startTimer();
+        updateHeader();
+        saveDaily();
+    }
+
     function updateHeader() {
-        const wrong = misses();
-        missesEl.textContent = `${wrong}/${MAX_MISSES}`;
+        const left = wrongGuessesLeft();
+        missesEl.textContent = `${left} wrong ${left === 1 ? 'guess' : 'guesses'} left`;
         const minutes = Math.floor(secondsElapsed / 60);
         const seconds = secondsElapsed % 60;
         timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -84,7 +112,8 @@
         pauseButton.setAttribute('aria-label', paused ? 'Play' : 'Pause');
         pauseOverlay.hidden = !paused || finished;
         stageEl.classList.toggle('paused', paused && !finished);
-        figureEl.dataset.stage = String(Math.min(wrong, MAX_MISSES));
+        figureEl.dataset.stage = String(Math.min(misses(), MAX_MISSES));
+        syncHintButton();
     }
 
     function saveDaily() {
@@ -99,7 +128,7 @@
     }
 
     function render() {
-        wordEl.textContent = (finished && !won ? revealAnswer() : masked()).toUpperCase();
+        renderWord();
         keyboard.querySelectorAll('[data-key]').forEach((button) => {
             const letter = button.dataset.key;
             button.classList.remove('exact', 'absent', 'used');
@@ -120,17 +149,19 @@
         saveDaily();
         render();
         let trophy = '';
-        if (didWin && gameMode === 'daily') {
-            const award = window.Store.awardIfNeeded(
-                PUZZLE_ID,
-                playDate,
-                'default',
-                window.PuzzleUtil.trophyFor(PUZZLE_ID, 'default')
-            );
+        if (didWin) {
             window.Store.recordBest(PUZZLE_ID, 'default', secondsElapsed);
-            trophy = award
-                ? `+${award} ${award === 1 ? 'trophy' : 'trophies'}`
-                : 'Trophies already claimed for this daily.';
+            if (gameMode === 'daily') {
+                const award = window.Store.awardIfNeeded(
+                    PUZZLE_ID,
+                    playDate,
+                    'default',
+                    window.PuzzleUtil.trophyFor(PUZZLE_ID, 'default')
+                );
+                trophy = award
+                    ? `+${award} ${award === 1 ? 'trophy' : 'trophies'}`
+                    : 'Trophies already claimed for this daily.';
+            }
         } else if (!didWin) {
             trophy = `The phrase was “${answer}”.`;
         }
@@ -166,11 +197,37 @@
         if (misses() >= MAX_MISSES) endGame(false);
     }
 
+    function giveHint() {
+        if (finished || paused) return;
+        window.App.closePopouts();
+        const needed = lettersInAnswer();
+        const remaining = [...needed].filter((letter) => !guessed.includes(letter));
+        if (!remaining.length) {
+            setStatus('No letters left to hint.');
+            return;
+        }
+        const counts = {};
+        for (const ch of answer) {
+            if (/[a-z]/.test(ch)) counts[ch] = (counts[ch] || 0) + 1;
+        }
+        remaining.sort((a, b) => (counts[a] - counts[b]) || a.localeCompare(b));
+        const letter = remaining[0];
+        if (!started) {
+            started = true;
+            startTimer();
+        }
+        guessed.push(letter);
+        setStatus(`Hint: ${letter.toUpperCase()} revealed.`);
+        render();
+        saveDaily();
+        if (isWon()) endGame(true);
+    }
+
     function buildKeyboard() {
         keyboard.innerHTML = '';
         KEY_ROWS.forEach((row) => {
             const line = document.createElement('div');
-            line.className = 'wordle-keys';
+            line.className = 'wordle-keys hang-keys';
             [...row].forEach((letter) => {
                 const button = document.createElement('button');
                 button.type = 'button';
@@ -200,9 +257,13 @@
             setStatus(won ? 'Completed.' : `The phrase was “${answer}”.`);
             return;
         }
-        setStatus(`${MAX_MISSES - misses()} misses left.`);
-        if (started && !paused) startTimer();
-        else stopTimer();
+        setStatus('');
+        if (!paused) {
+            started = true;
+            startTimer();
+        } else {
+            stopTimer();
+        }
     }
 
     function dailyPhrase(date) {
@@ -218,11 +279,7 @@
             buildKeyboard();
             pauseButton.addEventListener('click', () => {
                 if (finished) return;
-                paused = !paused;
-                if (paused) stopTimer();
-                else if (started) startTimer();
-                updateHeader();
-                saveDaily();
+                setPaused(!paused);
             });
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) saveDaily();
@@ -249,6 +306,9 @@
             paused = false;
             window.App.showHome(PUZZLE_ID);
         },
+        giveHint,
+        setPaused,
+        isPaused: () => paused,
         onKeyDown(event) {
             const tag = event.target && event.target.tagName;
             if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;

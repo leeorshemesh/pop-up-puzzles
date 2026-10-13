@@ -460,6 +460,12 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .modal-card h2 { margin: 0 0 8px; }
+.rules-body {
+    margin: 0 0 16px;
+    color: var(--muted);
+    line-height: 1.5;
+    text-align: left;
+}
 .modal-actions { display: flex; justify-content: center; gap: 8px; }
 
 .field, .swatch-block { display: block; margin: 16px 0; }

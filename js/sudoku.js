@@ -322,9 +322,11 @@ window.Sudoku = (function () {
         const showOverlay = puzzleReady && isPaused && !locked;
         pauseOverlay.hidden = !showOverlay;
         boardEl.classList.toggle('paused', showOverlay);
-        document.getElementById('btn-hint').disabled = !puzzleReady || locked;
-        document.getElementById('btn-solve').disabled = !puzzleReady || locked;
-        document.getElementById('btn-check').disabled = !puzzleReady || gameCompleted || revealing;
+        if (!document.getElementById('sudoku-play').hidden) {
+            document.getElementById('btn-hint').disabled = !puzzleReady || locked || isPaused;
+            document.getElementById('btn-solve').disabled = !puzzleReady || locked;
+            document.getElementById('btn-check').disabled = !puzzleReady || gameCompleted || revealing;
+        }
     }
 
     function notesFromSaved(saved) {
@@ -588,6 +590,11 @@ window.Sudoku = (function () {
         else pauseGame();
     }
 
+    function setPaused(next) {
+        if (next) pauseGame();
+        else resumeGame();
+    }
+
     function cellBreaksRules(row, col) {
         const value = boardState[row][col];
         boardState[row][col] = 0;
@@ -685,7 +692,7 @@ window.Sudoku = (function () {
     }
 
     function giveHint() {
-        if (!puzzleReady || inputLocked()) return;
+        if (!puzzleReady || inputLocked() || isPaused) return;
         window.App.closePopouts();
         const conflict = findConflict();
         if (conflict) {
@@ -804,6 +811,7 @@ window.Sudoku = (function () {
         isPaused = false;
         stopTicking();
         lastAward = 0;
+        window.Store.recordBest(PUZZLE_ID, difficulty, secondsElapsed);
         if (gameMode === 'daily') {
             lastAward = window.Store.awardIfNeeded(
                 PUZZLE_ID,
@@ -811,7 +819,6 @@ window.Sudoku = (function () {
                 difficulty,
                 window.PuzzleUtil.trophyFor(PUZZLE_ID, difficulty)
             );
-            window.Store.recordBest(PUZZLE_ID, difficulty, secondsElapsed);
         }
         persistProgress();
         syncControls();
@@ -858,7 +865,6 @@ window.Sudoku = (function () {
             if (notesButton.disabled) return;
             setNotesMode(!notesMode);
         });
-        document.getElementById('btn-hint').addEventListener('click', giveHint);
         document.getElementById('btn-solve').addEventListener('click', revealSolution);
         document.getElementById('btn-check').addEventListener('click', checkPuzzle);
         document.getElementById('btn-restart').addEventListener('click', restartPuzzle);
@@ -886,7 +892,10 @@ window.Sudoku = (function () {
         startFree,
         restoreSession,
         leave,
+        giveHint,
         onKeyDown,
+        setPaused,
+        isPaused: () => isPaused,
         save: persistProgress
     };
 })();

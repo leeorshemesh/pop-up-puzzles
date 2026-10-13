@@ -10,6 +10,24 @@ window.App = (function () {
 
     let currentPuzzle = null;
     let confirmResolver = null;
+    let resumeAfterRules = false;
+
+    const puzzleApis = {
+        sudoku: () => window.Sudoku,
+        wordle: () => window.Wordle,
+        minesweeper: () => window.Mines,
+        '2048': () => window.Game2048,
+        hangman: () => window.Hangman,
+        lightsout: () => window.LightsOut,
+        solitaire: () => window.Solitaire,
+        sliding: () => window.Sliding,
+        memory: () => window.Memory
+    };
+
+    function currentPuzzleApi() {
+        const getter = currentPuzzle ? puzzleApis[currentPuzzle] : null;
+        return getter ? getter() : null;
+    }
 
     function showScreen(name) {
         Object.entries(screens).forEach(([key, node]) => {
@@ -86,6 +104,8 @@ window.App = (function () {
         fillThemeSelect(document.getElementById('theme-home'), theme);
         fillThemeSelect(document.getElementById('theme-play'), theme);
         document.getElementById('hide-timer').checked = window.Store.hideTimers();
+        const hidePlay = document.getElementById('hide-timer-play');
+        if (hidePlay) hidePlay.checked = window.Store.hideTimers();
     }
 
     function chooseTheme(value) {
@@ -138,34 +158,33 @@ window.App = (function () {
             button.addEventListener('click', () => startPuzzle(id, 'daily', level === 'default' ? null : level));
             row.appendChild(button);
         });
-        renderBestLine(card, puzzle);
     }
 
-    function renderBestLine(card, puzzle) {
-        let line = card.querySelector('.best-line');
-        if (puzzle.id !== 'sudoku') {
-            if (line) line.remove();
-            return;
+    function showRules(puzzle, options = {}) {
+        if (!puzzle) return;
+        closePopouts();
+        resumeAfterRules = false;
+        if (options.pause) {
+            const api = currentPuzzleApi();
+            if (api && typeof api.isPaused === 'function' && typeof api.setPaused === 'function') {
+                if (!api.isPaused()) {
+                    api.setPaused(true);
+                    resumeAfterRules = true;
+                }
+            }
         }
-        if (!line) {
-            line = document.createElement('p');
-            line.className = 'best-line';
-            card.querySelector('.new-game-select').insertAdjacentElement('beforebegin', line);
+        document.getElementById('rules-title').textContent = puzzle.name;
+        document.getElementById('rules-body').textContent = puzzle.rules || puzzle.description || '';
+        document.getElementById('rules-modal').hidden = false;
+    }
+
+    function closeRules() {
+        document.getElementById('rules-modal').hidden = true;
+        if (resumeAfterRules) {
+            const api = currentPuzzleApi();
+            if (api && typeof api.setPaused === 'function') api.setPaused(false);
         }
-        const bests = window.Store.getBests(puzzle.id);
-        const hasAny = puzzle.difficulties.some((level) => bests[level] != null);
-        if (!hasAny || window.Store.hideTimers()) {
-            line.hidden = true;
-            line.textContent = '';
-            return;
-        }
-        const text = puzzle.difficulties.map((level) => {
-            const time = bests[level];
-            const label = window.PuzzleUtil.difficultyLabel(level);
-            return `${label} ${time == null ? '—' : window.PuzzleUtil.formatTime(time)}`;
-        }).join(' · ');
-        line.hidden = false;
-        line.textContent = `Best · ${text}`;
+        resumeAfterRules = false;
     }
 
     function startPuzzle(id, mode, level) {
@@ -233,13 +252,14 @@ window.App = (function () {
                 <div class="flip-inner">
                     <button type="button" class="card-front">
                         <span class="card-title">${puzzle.name}</span>
-                        <span class="card-copy">${puzzle.description}</span>
                     </button>
                     <div class="card-back">
                         <div class="card-back-head">
                             <button type="button" class="text-btn btn-unflip">Back</button>
                             <h2 class="daily-title"></h2>
+                            <button type="button" class="text-btn btn-rules">Rules</button>
                         </div>
+                        <p class="card-copy">${puzzle.description}</p>
                         <div class="daily-row"></div>
                     </div>
                 </div>
@@ -283,6 +303,7 @@ window.App = (function () {
             }
             card.querySelector('.card-front').addEventListener('click', () => flipCard(puzzle.id, true));
             card.querySelector('.btn-unflip').addEventListener('click', () => flipCard(puzzle.id, false));
+            card.querySelector('.btn-rules').addEventListener('click', () => showRules(puzzle));
             grid.appendChild(card);
             if (openId === puzzle.id) fillCardBack(puzzle.id);
         });
@@ -349,8 +370,17 @@ window.App = (function () {
         document.querySelectorAll('[data-sudoku-only]').forEach((node) => {
             node.hidden = puzzleId !== 'sudoku';
         });
+        document.querySelectorAll('[data-hint-for]').forEach((node) => {
+            const allowed = (node.dataset.hintFor || '').split(',').map((id) => id.trim()).filter(Boolean);
+            node.hidden = !allowed.includes(puzzleId);
+            if (!node.hidden) node.disabled = false;
+        });
         document.getElementById('victory-modal').hidden = true;
         showPlay(puzzleId);
+    }
+
+    function dismissVictory() {
+        document.getElementById('victory-modal').hidden = true;
     }
 
     function showVictory(options) {
@@ -397,12 +427,31 @@ window.App = (function () {
         document.getElementById('btn-confirm-cancel').addEventListener('click', () => {
             if (confirmResolver) confirmResolver(false);
         });
+        document.getElementById('btn-rules-close').addEventListener('click', closeRules);
+        document.getElementById('rules-modal').addEventListener('click', (event) => {
+            if (event.target.id === 'rules-modal') closeRules();
+        });
+        document.getElementById('btn-play-rules').addEventListener('click', () => {
+            const puzzle = window.PuzzleUtil.get(currentPuzzle);
+            showRules(puzzle, { pause: true });
+        });
         document.getElementById('btn-play-back').addEventListener('click', leavePlay);
         document.getElementById('btn-play-again').addEventListener('click', () => {
             document.getElementById('victory-modal').hidden = true;
             const next = victoryNext;
             victoryNext = null;
             if (next) next();
+        });
+        document.getElementById('btn-view-board').addEventListener('click', dismissVictory);
+        document.getElementById('victory-modal').addEventListener('click', (event) => {
+            if (event.target.id === 'victory-modal') dismissVictory();
+        });
+        document.getElementById('btn-hint').addEventListener('click', () => {
+            if (currentPuzzle === 'sudoku' && window.Sudoku.giveHint) window.Sudoku.giveHint();
+            else if (currentPuzzle === 'wordle' && window.Wordle.giveHint) window.Wordle.giveHint();
+            else if (currentPuzzle === 'minesweeper' && window.Mines.giveHint) window.Mines.giveHint();
+            else if (currentPuzzle === 'hangman' && window.Hangman.giveHint) window.Hangman.giveHint();
+            else if (currentPuzzle === 'lightsout' && window.LightsOut.giveHint) window.LightsOut.giveHint();
         });
         document.getElementById('btn-home-settings').addEventListener('click', (event) => {
             event.stopPropagation();
@@ -422,13 +471,29 @@ window.App = (function () {
         document.getElementById('theme-play').addEventListener('change', (event) => {
             chooseTheme(event.target.value);
         });
-        document.getElementById('hide-timer').addEventListener('change', () => {
-            window.Store.setHideTimers(document.getElementById('hide-timer').checked);
+        function onHideTimerChange(checked) {
+            window.Store.setHideTimers(checked);
             applyAppearance();
             renderCards();
+        }
+        document.getElementById('hide-timer').addEventListener('change', () => {
+            onHideTimerChange(document.getElementById('hide-timer').checked);
+        });
+        document.getElementById('hide-timer-play').addEventListener('change', () => {
+            onHideTimerChange(document.getElementById('hide-timer-play').checked);
         });
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
+                const victory = document.getElementById('victory-modal');
+                if (!victory.hidden) {
+                    dismissVictory();
+                    return;
+                }
+                const rulesModal = document.getElementById('rules-modal');
+                if (!rulesModal.hidden) {
+                    closeRules();
+                    return;
+                }
                 closePopouts();
                 if (!screens.home.hidden) flipCard(null, false);
                 if (!screens.shop.hidden && window.Shop) window.Shop.closeFlip();
@@ -452,6 +517,7 @@ window.App = (function () {
         showPlay,
         preparePlay,
         showVictory,
+        dismissVictory,
         renderCards,
         bind
     };

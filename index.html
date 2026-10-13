@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pop Up Puzzles</title>
-    <link rel="stylesheet" href="css/base.css?v=13">
-    <link rel="stylesheet" href="css/home.css?v=13">
-    <link rel="stylesheet" href="css/play.css?v=8">
+    <link rel="stylesheet" href="css/base.css?v=15">
+    <link rel="stylesheet" href="css/home.css?v=19">
+    <link rel="stylesheet" href="css/play.css?v=13">
 </head>
 <body>
     <div class="app">
@@ -19,9 +19,11 @@
                 <div class="top-actions">
                     <button type="button" id="btn-inventory" class="icon-btn" aria-label="Open inventory">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 7.5h16v12.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20V7.5z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
-                            <path d="M8 7.5V6a4 4 0 0 1 8 0v1.5" fill="none" stroke="currentColor" stroke-width="1.8"></path>
-                            <path d="M4 11h16" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+                            <path d="M7 9.5h10v11.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 21V9.5z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+                            <path d="M9 9.5V7.5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+                            <path d="M9 9.5V8a1 1 0 0 0-1-1H7" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+                            <path d="M15 9.5V8a1 1 0 0 1 1-1h1" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+                            <path d="M11 14h2v4h-2z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
                         </svg>
                     </button>
                     <button type="button" id="btn-shop" class="icon-btn" aria-label="Open shop">
@@ -144,13 +146,18 @@
                         <span></span><span></span><span></span>
                     </button>
                     <div id="play-menu" class="popout menu-pop" hidden>
-                        <button type="button" id="btn-hint" data-sudoku-only>Reveal Hint</button>
+                        <button type="button" id="btn-hint" data-hint-for="sudoku,wordle,minesweeper,hangman,lightsout">Reveal Hint</button>
                         <button type="button" id="btn-solve" data-sudoku-only>Reveal Solution</button>
                         <button type="button" id="btn-check" data-sudoku-only>Check Puzzle</button>
                         <button type="button" id="btn-restart" data-sudoku-only>Restart</button>
+                        <button type="button" id="btn-play-rules">Rules</button>
                         <label class="switch-row">
                             <span>Theme</span>
                             <select id="theme-play" class="theme-select"></select>
+                        </label>
+                        <label class="switch-row">
+                            <span>Hide timers</span>
+                            <input type="checkbox" id="hide-timer-play">
                         </label>
                     </div>
                 </div>
@@ -196,6 +203,9 @@
 
             <div id="wordle-play" hidden>
                 <p id="wordle-status" class="status" aria-live="polite"></p>
+                <div class="board-tools">
+                    <span id="wordle-timer" class="timer-display">00:00</span>
+                </div>
                 <div id="wordle-grid"></div>
                 <div id="wordle-keyboard"></div>
             </div>
@@ -227,20 +237,23 @@
 
             <div id="game2048-play" hidden>
                 <p id="g2048-status" class="status" aria-live="polite"></p>
-                <div class="board-tools">
-                    <span id="g2048-score" class="g2048-score">0</span>
-                    <span id="g2048-timer" class="timer-display">00:00</span>
-                    <button type="button" id="btn-g2048-pause" class="icon-btn pause-btn" aria-label="Pause">
-                        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true">
-                            <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
-                            <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
-                        </svg>
-                        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M8 5v14l11-7z" fill="currentColor"></path>
-                        </svg>
-                    </button>
-                </div>
                 <div id="g2048-stage" class="g2048-stage">
+                    <div class="g2048-board-meta">
+                        <span class="g2048-score-wrap">Score <span id="g2048-score" class="g2048-score">0</span></span>
+                        <span class="board-tools-center">
+                            <span id="g2048-timer" class="timer-display">00:00</span>
+                            <button type="button" id="btn-g2048-pause" class="icon-btn pause-btn" aria-label="Pause">
+                                <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+                                    <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
+                                    <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
+                                </svg>
+                                <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"></path>
+                                </svg>
+                            </button>
+                        </span>
+                        <button type="button" id="btn-g2048-undo" class="text-btn g2048-undo">Undo (3)</button>
+                    </div>
                     <div id="g2048-board" role="grid" aria-label="2048 board"></div>
                     <div id="g2048-pause" class="pause-overlay" hidden>
                         <p class="pause-label">Game Paused</p>
@@ -250,18 +263,20 @@
 
             <div id="hangman-play" hidden>
                 <p id="hang-status" class="status" aria-live="polite"></p>
-                <div class="board-tools">
-                    <span id="hang-misses" class="hang-misses">0/6</span>
-                    <span id="hang-timer" class="timer-display">00:00</span>
-                    <button type="button" id="btn-hang-pause" class="icon-btn pause-btn" aria-label="Pause">
-                        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true">
-                            <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
-                            <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
-                        </svg>
-                        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M8 5v14l11-7z" fill="currentColor"></path>
-                        </svg>
-                    </button>
+                <div class="board-tools hang-tools">
+                    <span class="board-tools-center">
+                        <span id="hang-timer" class="timer-display">00:00</span>
+                        <button type="button" id="btn-hang-pause" class="icon-btn pause-btn" aria-label="Pause">
+                            <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
+                                <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
+                            </svg>
+                            <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M8 5v14l11-7z" fill="currentColor"></path>
+                            </svg>
+                        </button>
+                    </span>
+                    <span id="hang-misses" class="hang-misses">7 wrong guesses left</span>
                 </div>
                 <div id="hang-stage" class="hang-stage">
                     <div id="hang-figure" class="hang-figure" data-stage="0" aria-hidden="true">
@@ -275,8 +290,11 @@
                         <span class="hang-arm-r"></span>
                         <span class="hang-leg-l"></span>
                         <span class="hang-leg-r"></span>
-                        <span class="hang-foot-l"></span>
-                        <span class="hang-foot-r"></span>
+                        <span class="hang-face">
+                            <span class="hang-eye hang-eye-l"></span>
+                            <span class="hang-eye hang-eye-r"></span>
+                            <span class="hang-smile"></span>
+                        </span>
                     </div>
                     <p id="hang-word" class="hang-word" aria-live="polite"></p>
                     <div id="hang-pause" class="pause-overlay" hidden>
@@ -288,18 +306,20 @@
 
             <div id="lightsout-play" hidden>
                 <p id="lights-status" class="status" aria-live="polite"></p>
-                <div class="board-tools">
-                    <span id="lights-count" class="lights-count">00</span>
-                    <span id="lights-timer" class="timer-display">00:00</span>
-                    <button type="button" id="btn-lights-pause" class="icon-btn pause-btn" aria-label="Pause">
-                        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true">
-                            <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
-                            <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
-                        </svg>
-                        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M8 5v14l11-7z" fill="currentColor"></path>
-                        </svg>
-                    </button>
+                <div class="board-tools lights-tools">
+                    <span id="lights-count" class="lights-count">0 lit</span>
+                    <span class="board-tools-center">
+                        <span id="lights-timer" class="timer-display">00:00</span>
+                        <button type="button" id="btn-lights-pause" class="icon-btn pause-btn" aria-label="Pause">
+                            <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
+                                <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"></rect>
+                            </svg>
+                            <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M8 5v14l11-7z" fill="currentColor"></path>
+                            </svg>
+                        </button>
+                    </span>
                 </div>
                 <div class="lights-stage">
                     <div id="lights-board" role="grid" aria-label="Lights Out board"></div>
@@ -386,7 +406,10 @@
             <h2 id="victory-title">Puzzle solved</h2>
             <p id="win-time-row">You finished in <span id="win-time">00:00</span>.</p>
             <p id="win-trophy"></p>
-            <button type="button" id="btn-play-again" class="btn btn-primary">Play again</button>
+            <div class="modal-actions">
+                <button type="button" id="btn-view-board" class="btn">View board</button>
+                <button type="button" id="btn-play-again" class="btn btn-primary">Play again</button>
+            </div>
         </div>
     </div>
 
@@ -400,23 +423,33 @@
         </div>
     </div>
 
+    <div id="rules-modal" class="modal" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+            <h2 id="rules-title">Rules</h2>
+            <p id="rules-body" class="rules-body"></p>
+            <div class="modal-actions">
+                <button type="button" id="btn-rules-close" class="btn btn-primary">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/storage.js?v=8"></script>
-    <script src="js/puzzles.js?v=8"></script>
-    <script src="js/profile.js?v=10"></script>
+    <script src="js/puzzles.js?v=9"></script>
+    <script src="js/profile.js?v=11"></script>
     <script src="js/shop.js?v=14"></script>
     <script src="js/inventory.js?v=1"></script>
-    <script src="js/sudoku.js?v=6"></script>
-    <script src="js/words.js?v=5"></script>
+    <script src="js/sudoku.js?v=9"></script>
+    <script src="js/words.js?v=6"></script>
     <script src="js/phrases.js?v=1"></script>
-    <script src="js/wordle.js?v=5"></script>
-    <script src="js/minesweeper.js?v=5"></script>
-    <script src="js/game2048.js?v=2"></script>
-    <script src="js/hangman.js?v=2"></script>
-    <script src="js/lightsout.js?v=1"></script>
-    <script src="js/solitaire.js?v=2"></script>
-    <script src="js/sliding.js?v=1"></script>
-    <script src="js/memory.js?v=1"></script>
+    <script src="js/wordle.js?v=8"></script>
+    <script src="js/minesweeper.js?v=9"></script>
+    <script src="js/game2048.js?v=6"></script>
+    <script src="js/hangman.js?v=6"></script>
+    <script src="js/lightsout.js?v=5"></script>
+    <script src="js/solitaire.js?v=4"></script>
+    <script src="js/sliding.js?v=3"></script>
+    <script src="js/memory.js?v=3"></script>
     <script src="js/placeholders.js?v=5"></script>
-    <script src="js/app.js?v=13"></script>
+    <script src="js/app.js?v=17"></script>
 </body>
 </html>

@@ -101,6 +101,15 @@
         }, 1000);
     }
 
+    function setPaused(next) {
+        if (won) return;
+        paused = !!next;
+        if (paused) stopTimer();
+        else if (started) startTimer();
+        updateHeader();
+        saveDaily();
+    }
+
     function updateHeader() {
         const minutes = Math.floor(secondsElapsed / 60);
         const seconds = secondsElapsed % 60;
@@ -145,6 +154,7 @@
         saveDaily();
         render();
         let trophy = '';
+        window.Store.recordBest(PUZZLE_ID, level, secondsElapsed);
         if (gameMode === 'daily') {
             const award = window.Store.awardIfNeeded(
                 PUZZLE_ID,
@@ -152,7 +162,6 @@
                 level,
                 window.PuzzleUtil.trophyFor(PUZZLE_ID, level)
             );
-            window.Store.recordBest(PUZZLE_ID, level, secondsElapsed);
             trophy = award
                 ? `+${award} ${award === 1 ? 'trophy' : 'trophies'}`
                 : 'Trophies already claimed for this daily.';
@@ -223,8 +232,12 @@
             return;
         }
         setStatus('Slide tiles into order.');
-        if (started && !paused) startTimer();
-        else stopTimer();
+        if (!paused) {
+            started = true;
+            startTimer();
+        } else {
+            stopTimer();
+        }
     }
 
     function restore(saved) {
@@ -247,11 +260,7 @@
         bind() {
             pauseButton.addEventListener('click', () => {
                 if (won) return;
-                paused = !paused;
-                if (paused) stopTimer();
-                else if (started) startTimer();
-                updateHeader();
-                saveDaily();
+                setPaused(!paused);
             });
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) saveDaily();
@@ -277,6 +286,8 @@
             paused = false;
             window.App.showHome(PUZZLE_ID);
         },
+        setPaused,
+        isPaused: () => paused,
         onKeyDown() {}
     };
 })();

@@ -13,8 +13,10 @@
     const timerEl = document.getElementById('g2048-timer');
     const statusEl = document.getElementById('g2048-status');
     const pauseButton = document.getElementById('btn-g2048-pause');
+    const undoButton = document.getElementById('btn-g2048-undo');
     const pauseOverlay = document.getElementById('g2048-pause');
     const stageEl = document.getElementById('g2048-stage');
+    const MAX_UNDOS = 3;
 
     let grid = blank();
     let score = 0;
@@ -29,6 +31,9 @@
     let rng = null;
     let touchStart = null;
     let sessionAwards = 0;
+    let undoStack = [];
+    let undosUsed = 0;
+    let puzzleRevealed = false;
 
     function blank() {
         return Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
@@ -98,7 +103,7 @@
     }
 
     function awardThresholds() {
-        if (gameMode !== 'daily') return;
+        if (gameMode !== 'daily' || puzzleRevealed) return;
         THRESHOLDS.forEach((entry) => {
             if (maxTile < entry.tile) return;
             const amount = window.PuzzleUtil.trophyFor(PUZZLE_ID, entry.key);
@@ -138,6 +143,13 @@
 
         if (gridsEqual(before, grid)) return false;
 
+        undoStack.push({
+            grid: before,
+            score,
+            maxTile
+        });
+        if (undoStack.length > MAX_UNDOS) undoStack.shift();
+
         if (!started) {
             started = true;
             startTimer();
@@ -147,7 +159,7 @@
         maxTile = Math.max(maxTile, currentMax());
         awardThresholds();
         render();
-        setStatus(`Best tile ${maxTile}`);
+        if (!(puzzleRevealed && gameMode === 'daily')) setStatus('');
         saveDaily();
 
         if (!canMove()) {
@@ -169,6 +181,27 @@
         return false;
     }
 
+    function syncUndoButton() {
+        const left = MAX_UNDOS - undosUsed;
+        undoButton.textContent = `Undo (${left})`;
+        undoButton.disabled = lost || paused || !undoStack.length || undosUsed >= MAX_UNDOS;
+    }
+
+    function undoMove() {
+        if (lost || paused || !undoStack.length || undosUsed >= MAX_UNDOS) return;
+        const snap = undoStack.pop();
+        grid = cloneGrid(snap.grid);
+        score = snap.score;
+        maxTile = snap.maxTile;
+        undosUsed += 1;
+        if (gameMode === 'daily') {
+            puzzleRevealed = true;
+            setStatus('Undo used — this daily will not award trophies.');
+        }
+        render();
+        saveDaily();
+    }
+
     function updateHeader() {
         scoreEl.textContent = String(score);
         const minutes = Math.floor(secondsElapsed / 60);
@@ -179,6 +212,7 @@
         pauseButton.setAttribute('aria-label', paused ? 'Play' : 'Pause');
         pauseOverlay.hidden = !paused || lost;
         boardEl.classList.toggle('paused', paused && !lost);
+        syncUndoButton();
     }
 
     function stopTimer() {
@@ -196,6 +230,15 @@
         }, 1000);
     }
 
+    function setPaused(next) {
+        if (lost) return;
+        paused = !!next;
+        if (paused) stopTimer();
+        else if (started) startTimer();
+        updateHeader();
+        saveDaily();
+    }
+
     function saveDaily() {
         if (gameMode !== 'daily' || !started) return;
         window.Store.setDaily(PUZZLE_ID, playDate, 'default', {
@@ -204,7 +247,9 @@
             started: true,
             grid,
             score,
-            maxTile
+            maxTile,
+            revealed: puzzleRevealed && !lost,
+            undosUsed
         });
     }
 
@@ -231,17 +276,17 @@
         paused = false;
         stopTimer();
         awardThresholds();
-        if (gameMode === 'daily') {
-            window.Store.recordBest(PUZZLE_ID, 'default', secondsElapsed);
-        }
+        window.Store.recordBest(PUZZLE_ID, 'default', secondsElapsed);
         saveDaily();
         render();
-        const trophy = sessionAwards
-            ? `+${sessionAwards} ${sessionAwards === 1 ? 'trophy' : 'trophies'} · best tile ${maxTile}`
-            : (gameMode === 'daily'
-                ? `Best tile ${maxTile}. Trophies already claimed for reached tiles.`
-                : `Best tile ${maxTile}.`);
-        setStatus(`No more moves · best tile ${maxTile}`);
+        const trophy = puzzleRevealed && gameMode === 'daily'
+            ? 'Undo used — this daily is not counted.'
+            : (sessionAwards
+                ? `+${sessionAwards} ${sessionAwards === 1 ? 'trophy' : 'trophies'}`
+                : (gameMode === 'daily'
+                    ? 'Trophies already claimed for reached tiles.'
+                    : ''));
+        setStatus('No more moves.');
         window.App.showVictory({
             title: 'Run over',
             seconds: secondsElapsed,
@@ -263,6 +308,9 @@
         paused = false;
         secondsElapsed = 0;
         sessionAwards = 0;
+        undoStack = [];
+        undosUsed = 0;
+        puzzleRevealed = false;
         stopTimer();
     }
 
@@ -279,12 +327,20 @@
         render();
         if (lost) {
             stopTimer();
-            setStatus(`Completed · best tile ${maxTile}`);
+            setStatus('Completed.');
             return;
         }
-        setStatus(maxTile ? `Best tile ${maxTile}` : 'Keep merging — no target end.');
-        if (started && !paused) startTimer();
-        else stopTimer();
+        if (puzzleRevealed && gameMode === 'daily') {
+            setStatus('Undo used — this daily will not award trophies.');
+        } else {
+            setStatus('');
+        }
+        if (!paused) {
+            started = true;
+            startTimer();
+        } else {
+            stopTimer();
+        }
     }
 
     function restore(saved) {
@@ -304,6 +360,9 @@
         secondsElapsed = saved.seconds || 0;
         lost = saved.status === 'completed' || saved.status === 'failed';
         paused = saved.status === 'in-progress';
+        puzzleRevealed = !!(saved.revealed);
+        undosUsed = saved.undosUsed || (saved.revealed ? MAX_UNDOS : 0);
+        undoStack = [];
         rng = window.PuzzleUtil.mulberry32(
             window.PuzzleUtil.hashString(`${JSON.stringify(grid)}:${score}:${secondsElapsed}:2048`)
         );
@@ -322,12 +381,9 @@
         bind() {
             pauseButton.addEventListener('click', () => {
                 if (lost) return;
-                paused = !paused;
-                if (paused) stopTimer();
-                else if (started) startTimer();
-                updateHeader();
-                saveDaily();
+                setPaused(!paused);
             });
+            undoButton.addEventListener('click', undoMove);
             stageEl.addEventListener('touchstart', (event) => {
                 if (event.touches.length !== 1) return;
                 const touch = event.touches[0];
@@ -369,6 +425,8 @@
             paused = false;
             window.App.showHome(PUZZLE_ID);
         },
+        setPaused,
+        isPaused: () => paused,
         onKeyDown(event) {
             const direction = directionFromKey(event.key);
             if (!direction) return;
