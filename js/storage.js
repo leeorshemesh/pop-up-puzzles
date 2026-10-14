@@ -9,7 +9,8 @@ window.Store = (function () {
         DAILY: 'popup-daily-progress',
         AWARDS: 'popup-trophy-awards',
         SESSION: 'popup-active-session',
-        BESTS: 'popup-best-times'
+        BESTS: 'popup-best-times',
+        SCORE_BESTS: 'popup-best-scores'
     };
 
     const DEFAULT_PROFILE = {
@@ -176,6 +177,29 @@ window.Store = (function () {
         return true;
     }
 
+    function getScoreBests(puzzleId) {
+        const bests = readJson(KEYS.SCORE_BESTS, {});
+        const entry = bests && typeof bests === 'object' ? bests[puzzleId] : null;
+        return entry && typeof entry === 'object' ? { ...entry } : {};
+    }
+
+    function recordScoreBest(puzzleId, level, value, better) {
+        const score = Number(value);
+        if (!Number.isFinite(score)) return false;
+        const direction = better === 'higher' ? 'higher' : 'lower';
+        const bests = readJson(KEYS.SCORE_BESTS, {});
+        const store = bests && typeof bests === 'object' ? bests : {};
+        store[puzzleId] = store[puzzleId] && typeof store[puzzleId] === 'object' ? store[puzzleId] : {};
+        const current = store[puzzleId][level];
+        if (current != null) {
+            if (direction === 'higher' && score <= current) return false;
+            if (direction === 'lower' && score >= current) return false;
+        }
+        store[puzzleId][level] = score;
+        writeJson(KEYS.SCORE_BESTS, store);
+        return true;
+    }
+
     function dailyStats() {
         const store = dailyStore();
         const stats = {};
@@ -216,6 +240,8 @@ window.Store = (function () {
         clearSession,
         getBests,
         recordBest,
+        getScoreBests,
+        recordScoreBest,
         dailyStats
     };
 })();

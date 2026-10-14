@@ -6,6 +6,7 @@
     const boardEl = document.getElementById('lights-board');
     const statusEl = document.getElementById('lights-status');
     const countEl = document.getElementById('lights-count');
+    const scoreEl = document.getElementById('lights-score');
     const timerEl = document.getElementById('lights-timer');
     const pauseButton = document.getElementById('btn-lights-pause');
     const pauseOverlay = document.getElementById('lights-pause');
@@ -24,6 +25,7 @@
     let hintTimer = null;
     let hintCell = null;
     let puzzleRevealed = false;
+    let taps = 0;
 
     function blank() {
         return Array.from({ length: size }, () => Array(size).fill(false));
@@ -104,6 +106,7 @@
 
     function updateHeader() {
         countEl.textContent = `${litCount()} lit`;
+        if (scoreEl) scoreEl.textContent = String(taps);
         const minutes = Math.floor(secondsElapsed / 60);
         const seconds = secondsElapsed % 60;
         timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -121,6 +124,7 @@
             status: won ? 'completed' : 'in-progress',
             seconds: secondsElapsed,
             started: true,
+            taps,
             grid: grid.map((row) => row.map((on) => (on ? 1 : 0))),
             revealed: puzzleRevealed && !won
         });
@@ -216,9 +220,13 @@
         stopTimer();
         saveDaily();
         render();
+        const scoring = window.PuzzleUtil.scoringFor(PUZZLE_ID);
+        let bestScore = window.Store.getScoreBests(PUZZLE_ID)[level];
         let trophy = '';
         if (!puzzleRevealed) {
             window.Store.recordBest(PUZZLE_ID, level, secondsElapsed);
+            window.Store.recordScoreBest(PUZZLE_ID, level, taps, scoring.better);
+            bestScore = window.Store.getScoreBests(PUZZLE_ID)[level];
         }
         if (gameMode === 'daily') {
             if (puzzleRevealed) {
@@ -236,11 +244,14 @@
             }
         }
         setStatus(window.Store.hideTimers()
-            ? 'All lights out.'
-            : `Cleared in ${window.PuzzleUtil.formatTime(secondsElapsed)}.`);
+            ? `All lights out · ${taps} taps.`
+            : `Cleared in ${window.PuzzleUtil.formatTime(secondsElapsed)} · ${taps} taps.`);
         window.App.showVictory({
             title: 'Puzzle solved',
             seconds: secondsElapsed,
+            score: taps,
+            bestScore,
+            scoring,
             trophy,
             again: gameMode === 'daily' ? 'Back to Lights Out' : 'Play again',
             onAgain: () => {
@@ -256,6 +267,7 @@
             started = true;
             startTimer();
         }
+        taps += 1;
         press(row, col);
         render();
         saveDaily();
@@ -288,6 +300,7 @@
             startTimer();
         }
         puzzleRevealed = true;
+        taps += 1;
         hintCell = best;
         clearTimeout(hintTimer);
         hintTimer = setTimeout(() => {
@@ -334,6 +347,7 @@
         won = false;
         paused = false;
         puzzleRevealed = false;
+        taps = 0;
         secondsElapsed = 0;
         stopTimer();
     }
@@ -355,6 +369,7 @@
         }
         started = true;
         secondsElapsed = saved.seconds || 0;
+        taps = saved.taps || 0;
         won = saved.status === 'completed';
         paused = saved.status === 'in-progress';
         puzzleRevealed = !!(saved.revealed);

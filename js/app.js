@@ -386,6 +386,24 @@ window.App = (function () {
     function showVictory(options) {
         document.getElementById('victory-title').textContent = options.title || 'Puzzle solved';
         document.getElementById('win-time').textContent = window.PuzzleUtil.formatTime(options.seconds || 0);
+        const scoreRow = document.getElementById('win-score-row');
+        const scoring = options.scoring || null;
+        const hideTimeScore = scoring && scoring.format === 'time' && window.Store.hideTimers();
+        const scoreText = hideTimeScore
+            ? ''
+            : (options.scoreText
+                || (scoring
+                    ? window.PuzzleUtil.formatScoreLine(options.score, options.bestScore, scoring)
+                    : ''));
+        if (scoreRow) {
+            if (scoreText) {
+                scoreRow.hidden = false;
+                scoreRow.textContent = scoreText;
+            } else {
+                scoreRow.hidden = true;
+                scoreRow.textContent = '';
+            }
+        }
         document.getElementById('win-trophy').textContent = options.trophy || '';
         document.getElementById('btn-play-again').textContent = options.again || 'Play again';
         victoryNext = options.onAgain || null;
@@ -452,6 +470,8 @@ window.App = (function () {
             else if (currentPuzzle === 'minesweeper' && window.Mines.giveHint) window.Mines.giveHint();
             else if (currentPuzzle === 'hangman' && window.Hangman.giveHint) window.Hangman.giveHint();
             else if (currentPuzzle === 'lightsout' && window.LightsOut.giveHint) window.LightsOut.giveHint();
+            else if (currentPuzzle === 'sliding' && window.Sliding.giveHint) window.Sliding.giveHint();
+            else if (currentPuzzle === 'memory' && window.Memory.giveHint) window.Memory.giveHint();
         });
         document.getElementById('btn-home-settings').addEventListener('click', (event) => {
             event.stopPropagation();

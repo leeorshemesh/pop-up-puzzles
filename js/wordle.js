@@ -8,6 +8,7 @@
     const keyboard = document.getElementById('wordle-keyboard');
     const statusEl = document.getElementById('wordle-status');
     const timerEl = document.getElementById('wordle-timer');
+    const scoreEl = document.getElementById('wordle-score');
 
     const answers = window.Words.answers;
     const wordSet = new Set(window.Words.guesses);
@@ -146,6 +147,7 @@
                 button.classList.add('hint');
             }
         });
+        updateScoreDisplay();
         syncHintButton();
     }
 
@@ -160,6 +162,10 @@
     function updateTimerDisplay() {
         if (!timerEl) return;
         timerEl.textContent = window.PuzzleUtil.formatTime(secondsElapsed);
+    }
+
+    function updateScoreDisplay() {
+        if (scoreEl) scoreEl.textContent = String(guesses.length);
     }
 
     function stopTimer() {
@@ -203,8 +209,12 @@
         locked = true;
         stopTimer();
         saveDaily();
+        const scoring = window.PuzzleUtil.scoringFor(PUZZLE_ID);
+        let bestScore = window.Store.getScoreBests(PUZZLE_ID).default;
         if (won && !puzzleRevealed) {
             window.Store.recordBest(PUZZLE_ID, 'default', secondsElapsed);
+            window.Store.recordScoreBest(PUZZLE_ID, 'default', guesses.length, scoring.better);
+            bestScore = window.Store.getScoreBests(PUZZLE_ID).default;
         }
         const trophyText = won && gameMode === 'daily'
             ? (puzzleRevealed
@@ -228,6 +238,9 @@
         window.App.showVictory({
             title: won ? 'Puzzle solved' : 'Out of guesses',
             seconds: secondsElapsed,
+            score: guesses.length,
+            bestScore,
+            scoring,
             trophy: trophyText,
             again: gameMode === 'daily' ? 'Back to Wordle' : 'Play again',
             onAgain: () => {

@@ -226,7 +226,7 @@
 [data-hide-timer="true"] .timer-display,
 [data-hide-timer="true"] #win-time-row,
 [data-hide-timer="true"] .time-label,
-[data-hide-timer="true"] .best-line {
+[data-hide-timer="true"] .best-line:not(.best-score-line) {
     display: none !important;
 }
 

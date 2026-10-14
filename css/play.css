@@ -29,7 +29,7 @@
 }
 
 .lights-tools .lights-count {
-    justify-self: start;
+    justify-self: end;
 }
 
 .board-tools-center {
@@ -527,14 +527,15 @@
 }
 
 .hang-tools {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: 4px;
+    gap: 10px;
 }
 
 .hang-tools .hang-misses {
-    text-align: center;
+    justify-self: end;
+    text-align: right;
 }
 
 .hang-stage {
@@ -906,24 +907,134 @@
 .sol-slot.waste-hint::after { content: "▾"; opacity: 0.45; }
 
 .sol-card.up {
+    position: relative;
     flex-direction: column;
-    justify-content: space-between;
-    padding: 5px 6px 8px;
+    justify-content: flex-start;
+    padding: 4px;
+    overflow: hidden;
 }
 
-.sol-card .sol-corner { font-size: 0.72em; line-height: 1.1; }
-.sol-card .sol-pip {
-    align-self: center;
-    font-size: 1.25em;
+.sol-column .sol-card.up {
+    position: absolute;
+}
+
+.sol-card .sol-corner {
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    font-size: 0.62em;
+    line-height: 1.05;
+    z-index: 2;
+    text-align: center;
+}
+
+.sol-card .sol-corner-br {
+    top: auto;
+    left: auto;
+    right: 4px;
+    bottom: 3px;
+    transform: rotate(180deg);
+}
+
+.sol-card .sol-pips {
+    position: absolute;
+    inset: 14% 10% 14%;
+    pointer-events: none;
+}
+
+.sol-card .sol-pip-mark {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-size: clamp(0.55rem, 1.8vw, 0.85rem);
     line-height: 1;
 }
 
-.sol-column .sol-card.face-down-stack {
-    top: calc(var(--stack, 0) * 12px);
+.sol-card .sol-royal {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    pointer-events: none;
 }
 
-.sol-column .sol-card.face-up-stack {
-    top: calc(var(--face-base, 0px) + (var(--face-index, 0) * 32px));
+.sol-card .sol-royal-rank {
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    line-height: 1;
+    font-weight: 800;
+}
+
+.sol-card .sol-royal-suit {
+    font-size: clamp(0.85rem, 3vw, 1.15rem);
+    line-height: 1;
+}
+
+.sol-card.sol-dragging {
+    visibility: hidden;
+}
+
+.sol-fly-card {
+    position: fixed;
+    z-index: 90;
+    pointer-events: none;
+    border-radius: 8px;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.2));
+    perspective: 900px;
+}
+
+.sol-fly-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+.sol-fly-card .sol-fly-face {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.sol-fly-card .sol-fly-front {
+    transform: rotateY(180deg);
+}
+
+.sol-fly-card.sol-fly-animating {
+    animation: sol-fly-move 0.28s ease forwards;
+}
+
+.sol-fly-card.sol-fly-animating .sol-fly-inner {
+    animation: sol-fly-flip 0.28s ease forwards;
+}
+
+@keyframes sol-fly-move {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(var(--fly-dx), var(--fly-dy));
+    }
+}
+
+@keyframes sol-fly-flip {
+    from {
+        transform: rotateY(0deg);
+    }
+    to {
+        transform: rotateY(180deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sol-fly-card.sol-fly-animating,
+    .sol-fly-card.sol-fly-animating .sol-fly-inner { animation: none; }
 }
 
 .sol-drag-ghost {
@@ -996,13 +1107,64 @@ body[data-cards="geo"] .sol-card.down {
     color: var(--text);
     font-weight: 800;
     font-size: clamp(1.1rem, 5vw, 1.8rem);
-    cursor: pointer;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
 }
 
 .sliding-tile.blank {
     background: transparent;
     border-style: dashed;
     cursor: default;
+}
+
+.sliding-tile.sliding-drag {
+    z-index: 2;
+    cursor: grabbing;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.memory-tools,
+.sliding-tools,
+.wordle-tools,
+.hang-tools,
+.lights-tools,
+.sol-tools {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.memory-tools .memory-score-wrap,
+.sliding-tools .sliding-score-wrap,
+.play-score-wrap {
+    justify-self: start;
+    font-weight: 700;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.memory-tools .memory-score,
+.sliding-tools .sliding-score,
+.play-score {
+    color: var(--timer-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.15rem;
+}
+
+.memory-tools .board-tools-center,
+.sliding-tools .board-tools-center,
+.wordle-tools .board-tools-center,
+.hang-tools .board-tools-center,
+.lights-tools .board-tools-center,
+.sol-tools .board-tools-center {
+    justify-self: center;
+}
+
+.lights-tools .lights-count,
+.hang-tools .hang-misses {
+    justify-self: end;
 }
 
 .memory-card {
@@ -1012,6 +1174,16 @@ body[data-cards="geo"] .sol-card.down {
     color: var(--text);
     font-size: clamp(1.2rem, 5vw, 1.9rem);
     cursor: pointer;
+    transform: none;
+    transition: none;
+}
+
+.memory-card:active,
+.memory-card:focus,
+.memory-card:focus-visible {
+    transform: none;
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
 }
 
 .memory-card.up {
@@ -1021,6 +1193,35 @@ body[data-cards="geo"] .sol-card.down {
 .memory-card.matched {
     background: color-mix(in srgb, var(--exact) 25%, var(--panel));
     cursor: default;
+}
+
+body[data-cards="classic"] .memory-card.down,
+body:not([data-cards]) .memory-card.down {
+    background:
+        repeating-linear-gradient(
+            45deg,
+            color-mix(in srgb, var(--accent) 35%, var(--panel)),
+            color-mix(in srgb, var(--accent) 35%, var(--panel)) 6px,
+            color-mix(in srgb, var(--accent) 55%, var(--panel)) 6px,
+            color-mix(in srgb, var(--accent) 55%, var(--panel)) 12px
+        );
+}
+
+body[data-cards="stars"] .memory-card.down {
+    background:
+        radial-gradient(circle at 50% 32%, #fbbf24 0 12%, transparent 13%),
+        radial-gradient(circle at 28% 68%, #fbbf24 0 8%, transparent 9%),
+        radial-gradient(circle at 72% 68%, #fbbf24 0 8%, transparent 9%),
+        #1e3a8a;
+}
+
+body[data-cards="geo"] .memory-card.down {
+    background:
+        linear-gradient(135deg, #0f172a 25%, transparent 25%) -8px 0 / 16px 16px,
+        linear-gradient(225deg, #0f172a 25%, transparent 25%) -8px 0 / 16px 16px,
+        linear-gradient(315deg, #0f172a 25%, transparent 25%) 0 0 / 16px 16px,
+        linear-gradient(45deg, #0f172a 25%, transparent 25%) 0 0 / 16px 16px,
+        #38bdf8;
 }
 
 @media (prefers-reduced-motion: reduce) {

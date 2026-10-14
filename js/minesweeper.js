@@ -326,9 +326,12 @@
         }
         saveDaily();
         render();
+        const scoring = window.PuzzleUtil.scoringFor(PUZZLE_ID);
+        let bestScore = window.Store.getBests(PUZZLE_ID)[level];
         let trophy = '';
         if (didWin) {
             window.Store.recordBest(PUZZLE_ID, level, secondsElapsed);
+            bestScore = window.Store.getBests(PUZZLE_ID)[level];
             if (gameMode === 'daily') {
                 const award = window.Store.awardIfNeeded(
                     PUZZLE_ID,
@@ -347,6 +350,9 @@
         window.App.showVictory({
             title: didWin ? 'Puzzle solved' : 'Mine hit',
             seconds: secondsElapsed,
+            score: didWin ? secondsElapsed : undefined,
+            bestScore: didWin ? bestScore : undefined,
+            scoring: didWin ? scoring : undefined,
             trophy,
             again: gameMode === 'daily' ? 'Back to Minesweeper' : 'Play again',
             onAgain: () => {

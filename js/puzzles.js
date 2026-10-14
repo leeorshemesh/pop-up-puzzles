@@ -5,7 +5,8 @@ window.Puzzles = [
         description: 'Fill the grid so every row, column, and box has 1 through 9.',
         rules: 'Fill every empty cell with a digit from 1 to 9. Each row, each column, and each 3×3 box must contain every digit exactly once. Tap a cell, then use the keypad or keyboard. Notes mode lets you pencil in candidates.',
         difficulties: ['easy', 'medium', 'hard'],
-        trophies: { easy: 1, medium: 2, hard: 3 }
+        trophies: { easy: 1, medium: 2, hard: 3 },
+        scoring: { key: 'time', label: 'Time', better: 'lower', format: 'time' }
     },
     {
         id: 'wordle',
@@ -13,7 +14,8 @@ window.Puzzles = [
         description: 'Guess the hidden five-letter word in six tries.',
         rules: 'Guess the five-letter word in six tries. After each guess, tiles show green for a correct letter in the right spot, yellow for a correct letter in the wrong spot, and gray for letters not in the word. Use the on-screen keyboard or your keyboard.',
         difficulties: [],
-        trophies: { default: 2 }
+        trophies: { default: 2 },
+        scoring: { key: 'guesses', label: 'Guesses', better: 'lower', format: 'number' }
     },
     {
         id: 'minesweeper',
@@ -21,7 +23,8 @@ window.Puzzles = [
         description: 'Clear the board without hitting a mine.',
         rules: 'Reveal all safe cells without detonating a mine. Numbers show how many mines touch that cell. Flag suspected mines with a right-click or long-press. Clear every non-mine cell to win.',
         difficulties: ['easy', 'medium', 'hard'],
-        trophies: { easy: 1, medium: 2, hard: 3 }
+        trophies: { easy: 1, medium: 2, hard: 3 },
+        scoring: { key: 'time', label: 'Time', better: 'lower', format: 'time' }
     },
     {
         id: '2048',
@@ -29,7 +32,8 @@ window.Puzzles = [
         description: 'Slide and merge tiles for a high score.',
         rules: 'Swipe or use arrow keys to slide all tiles. Matching tiles merge into one with double the value. After each move, a new tile appears. Keep merging as long as you can — the run ends when no moves remain.',
         difficulties: [],
-        trophies: { t512: 1, t1024: 2, t2048: 3, t4096: 4 }
+        trophies: { t512: 1, t1024: 2, t2048: 3, t4096: 4 },
+        scoring: { key: 'score', label: 'Score', better: 'higher', format: 'number' }
     },
     {
         id: 'hangman',
@@ -37,7 +41,8 @@ window.Puzzles = [
         description: 'Guess the hidden phrase one letter at a time.',
         rules: 'Reveal the hidden phrase by guessing letters. Correct letters fill in every matching blank. Each wrong guess adds to the hangman drawing. Guess the full phrase before the drawing is complete.',
         difficulties: [],
-        trophies: { default: 2 }
+        trophies: { default: 2 },
+        scoring: { key: 'lives', label: 'Lives', better: 'higher', format: 'number' }
     },
     {
         id: 'lightsout',
@@ -45,7 +50,8 @@ window.Puzzles = [
         description: 'Toggle cells until every light is off.',
         rules: 'Turn every light off. Tapping a cell toggles it and its orthogonal neighbors. Plan a sequence of taps so the whole board ends dark.',
         difficulties: ['easy', 'medium', 'hard'],
-        trophies: { easy: 1, medium: 2, hard: 3 }
+        trophies: { easy: 1, medium: 2, hard: 3 },
+        scoring: { key: 'taps', label: 'Taps', better: 'lower', format: 'number' }
     },
     {
         id: 'solitaire',
@@ -53,7 +59,8 @@ window.Puzzles = [
         description: 'Clear the Klondike layout by building foundations.',
         rules: 'Build the four foundation piles up by suit from ace to king. In the tableau, stack cards down by alternating colors. Draw from the stock when stuck. Move sequences as allowed until all cards are on the foundations.',
         difficulties: [],
-        trophies: { default: 3 }
+        trophies: { default: 3 },
+        scoring: { key: 'score', label: 'Score', better: 'higher', format: 'number' }
     },
     {
         id: 'sliding',
@@ -61,7 +68,8 @@ window.Puzzles = [
         description: 'Slide numbered tiles back into order.',
         rules: 'Slide tiles into the empty space to restore ascending order. Tap a tile adjacent to the blank to move it. Finish when numbers read left to right, top to bottom, with the blank in the last spot.',
         difficulties: ['easy', 'medium', 'hard'],
-        trophies: { easy: 1, medium: 2, hard: 3 }
+        trophies: { easy: 1, medium: 2, hard: 3 },
+        scoring: { key: 'moves', label: 'Moves', better: 'lower', format: 'number' }
     },
     {
         id: 'memory',
@@ -69,7 +77,8 @@ window.Puzzles = [
         description: 'Flip cards to find matching pairs.',
         rules: 'Flip two cards at a time. Matching pairs stay face up; mismatches flip back down. Clear the board by finding every pair. Remember positions to finish faster.',
         difficulties: ['easy', 'medium', 'hard'],
-        trophies: { easy: 1, medium: 2, hard: 3 }
+        trophies: { easy: 1, medium: 2, hard: 3 },
+        scoring: { key: 'flips', label: 'Flips', better: 'lower', format: 'number' }
     }
 ];
 
@@ -96,6 +105,22 @@ window.PuzzleUtil = {
     },
     difficultyLabel(level) {
         return level ? level.charAt(0).toUpperCase() + level.slice(1) : 'Play';
+    },
+    scoringFor(id) {
+        const puzzle = this.get(id);
+        return puzzle && puzzle.scoring ? puzzle.scoring : null;
+    },
+    formatScore(value, scoring) {
+        if (value == null) return '—';
+        if (scoring && scoring.format === 'time') return this.formatTime(value);
+        return String(value);
+    },
+    formatScoreLine(score, bestScore, scoring) {
+        if (!scoring || score == null) return '';
+        const label = scoring.label || 'Score';
+        const current = this.formatScore(score, scoring);
+        if (bestScore == null) return `${label}: ${current}`;
+        return `${label}: ${current} · Best: ${this.formatScore(bestScore, scoring)}`;
     },
     hashString(value) {
         let hash = 2166136261;

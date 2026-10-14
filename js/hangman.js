@@ -7,6 +7,7 @@
     const figureEl = document.getElementById('hang-figure');
     const wordEl = document.getElementById('hang-word');
     const missesEl = document.getElementById('hang-misses');
+    const scoreEl = document.getElementById('hang-score');
     const timerEl = document.getElementById('hang-timer');
     const keyboard = document.getElementById('hang-keyboard');
     const pauseButton = document.getElementById('btn-hang-pause');
@@ -103,7 +104,8 @@
 
     function updateHeader() {
         const left = wrongGuessesLeft();
-        missesEl.textContent = `${left} wrong ${left === 1 ? 'guess' : 'guesses'} left`;
+        if (missesEl) missesEl.textContent = `${left} wrong ${left === 1 ? 'guess' : 'guesses'} left`;
+        if (scoreEl) scoreEl.textContent = String(left);
         const minutes = Math.floor(secondsElapsed / 60);
         const seconds = secondsElapsed % 60;
         timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -148,9 +150,14 @@
         stopTimer();
         saveDaily();
         render();
+        const scoring = window.PuzzleUtil.scoringFor(PUZZLE_ID);
+        const lives = wrongGuessesLeft();
+        let bestScore = window.Store.getScoreBests(PUZZLE_ID).default;
         let trophy = '';
         if (didWin) {
             window.Store.recordBest(PUZZLE_ID, 'default', secondsElapsed);
+            window.Store.recordScoreBest(PUZZLE_ID, 'default', lives, scoring.better);
+            bestScore = window.Store.getScoreBests(PUZZLE_ID).default;
             if (gameMode === 'daily') {
                 const award = window.Store.awardIfNeeded(
                     PUZZLE_ID,
@@ -171,6 +178,9 @@
         window.App.showVictory({
             title: didWin ? 'Puzzle solved' : 'Out of guesses',
             seconds: secondsElapsed,
+            score: lives,
+            bestScore,
+            scoring,
             trophy,
             again: gameMode === 'daily' ? 'Back to Hangman' : 'Play again',
             onAgain: () => {

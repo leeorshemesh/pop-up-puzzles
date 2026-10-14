@@ -276,7 +276,10 @@
         paused = false;
         stopTimer();
         awardThresholds();
+        const scoring = window.PuzzleUtil.scoringFor(PUZZLE_ID);
         window.Store.recordBest(PUZZLE_ID, 'default', secondsElapsed);
+        window.Store.recordScoreBest(PUZZLE_ID, 'default', score, scoring.better);
+        const bestScore = window.Store.getScoreBests(PUZZLE_ID).default;
         saveDaily();
         render();
         const trophy = puzzleRevealed && gameMode === 'daily'
@@ -290,6 +293,9 @@
         window.App.showVictory({
             title: 'Run over',
             seconds: secondsElapsed,
+            score,
+            bestScore,
+            scoring,
             trophy,
             again: gameMode === 'daily' ? 'Back to 2048' : 'Play again',
             onAgain: () => {

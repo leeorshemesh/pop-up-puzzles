@@ -214,20 +214,42 @@ window.Profile = (function () {
 
             const bests = window.Store.getBests(puzzle.id);
             const levels = puzzle.difficulties.length ? puzzle.difficulties : ['default'];
+            const scoring = puzzle.scoring || null;
+            const isTimeScore = scoring && scoring.format === 'time';
             const hasBest = levels.some((level) => bests[level] != null);
             if (hasBest && !window.Store.hideTimers()) {
                 const best = document.createElement('div');
                 best.className = 'best-line';
                 if (puzzle.difficulties.length) {
-                    best.textContent = levels.map((level) => {
+                    best.textContent = `Best time: ${levels.map((level) => {
                         const time = bests[level];
                         const label = window.PuzzleUtil.difficultyLabel(level);
                         return `${label} ${time == null ? '—' : window.PuzzleUtil.formatTime(time)}`;
-                    }).join(' · ');
+                    }).join(' · ')}`;
                 } else {
-                    best.textContent = window.PuzzleUtil.formatTime(bests.default);
+                    best.textContent = `Best time: ${window.PuzzleUtil.formatTime(bests.default)}`;
                 }
                 body.appendChild(best);
+            }
+
+            if (scoring && !isTimeScore) {
+                const scoreBests = window.Store.getScoreBests(puzzle.id);
+                const hasScoreBest = levels.some((level) => scoreBests[level] != null);
+                if (hasScoreBest) {
+                    const scoreLine = document.createElement('div');
+                    scoreLine.className = 'best-line best-score-line';
+                    const label = scoring.label || 'Score';
+                    if (puzzle.difficulties.length) {
+                        scoreLine.textContent = `Best ${label.toLowerCase()}: ${levels.map((level) => {
+                            const value = scoreBests[level];
+                            const levelLabel = window.PuzzleUtil.difficultyLabel(level);
+                            return `${levelLabel} ${value == null ? '—' : window.PuzzleUtil.formatScore(value, scoring)}`;
+                        }).join(' · ')}`;
+                    } else {
+                        scoreLine.textContent = `Best ${label.toLowerCase()}: ${window.PuzzleUtil.formatScore(scoreBests.default, scoring)}`;
+                    }
+                    body.appendChild(scoreLine);
+                }
             }
 
             item.appendChild(body);

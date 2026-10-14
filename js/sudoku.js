@@ -811,7 +811,9 @@ window.Sudoku = (function () {
         isPaused = false;
         stopTicking();
         lastAward = 0;
+        const scoring = window.PuzzleUtil.scoringFor(PUZZLE_ID);
         window.Store.recordBest(PUZZLE_ID, difficulty, secondsElapsed);
+        const bestScore = window.Store.getBests(PUZZLE_ID)[difficulty];
         if (gameMode === 'daily') {
             lastAward = window.Store.awardIfNeeded(
                 PUZZLE_ID,
@@ -827,6 +829,9 @@ window.Sudoku = (function () {
         window.App.showVictory({
             title: 'Puzzle solved',
             seconds: secondsElapsed,
+            score: secondsElapsed,
+            bestScore,
+            scoring,
             trophy: gameMode === 'daily'
                 ? (lastAward ? `+${lastAward} ${lastAward === 1 ? 'trophy' : 'trophies'}` : 'Trophies already claimed for this daily.')
                 : '',
