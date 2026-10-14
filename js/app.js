@@ -251,6 +251,7 @@ window.App = (function () {
             card.innerHTML = `
                 <div class="flip-inner">
                     <button type="button" class="card-front">
+                        <img class="card-icon" src="assets/icons/${puzzle.id}.jpg?v=7" alt="" width="96" height="96" decoding="async">
                         <span class="card-title">${puzzle.name}</span>
                     </button>
                     <div class="card-back">
